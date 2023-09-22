@@ -7,20 +7,27 @@ function POMDPs.transition(mdp::RoverGridWorldMDP, s::State, a::Action)
     probabilities = zeros(Nₐ + 1)
     p_transition = mdp.p_transition
 
-    for (i, a′) in enumerate(𝒜)
-        prob = (a′ == a) ? p_transition : (1 - p_transition) / (Nₐ - 1)
-        destination = s + MOVEMENTS[a′]
-        next_states[i+1] = destination
-
+    if p_transition == 1.0
+        # deterministic transitions
+        destination = s + MOVEMENTS[a]
+        next_states[2] = destination
         if inbounds(mdp, destination)
-            probabilities[i+1] += prob
+            probabilities[2] = 1.0
+        end
+    else
+        # stochastic transitions
+        for (i, a′) in enumerate(𝒜)
+            prob = (a′ == a) ? p_transition : (1 - p_transition) / (Nₐ - 1)
+            destination = s + MOVEMENTS[a′]
+            next_states[i+1] = destination
+            if inbounds(mdp, destination)
+                probabilities[i+1] += prob
+            end
         end
     end
-    
     # handle out-of-bounds transitions
     next_states[1] = s
     probabilities[1] = 1 - sum(probabilities)
-
     return SparseCat(next_states, probabilities)
 end
 
