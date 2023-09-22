@@ -1,5 +1,7 @@
 module BiMDPs
 
-# Write your package code here.
+include("RoverGridWorld/RoverGridWorld.jl")
+export
+    RoverGridWorld
 
-end
+end # module
