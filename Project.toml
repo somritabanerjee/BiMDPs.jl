@@ -1,0 +1,13 @@
+name = "BiMDPs"
+uuid = "8af17bd5-7ea0-4ae2-8fd5-dbf3cdd18bce"
+authors = ["Somrita Banerjee<somrita@stanford.edu> and others"]
+version = "1.0.0-DEV"
+
+[compat]
+julia = "1"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
