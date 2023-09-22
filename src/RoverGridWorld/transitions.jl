@@ -1,5 +1,5 @@
 function POMDPs.transition(mdp::RoverGridWorldMDP, s::State, a::Action)
-    if reward(mdp, s) != 0
+    if (s == mdp.terminal_state) || (mdp.terminal_state == mdp.null_state && reward(mdp, s) != 0)
         return Deterministic(mdp.null_state)
     end
 

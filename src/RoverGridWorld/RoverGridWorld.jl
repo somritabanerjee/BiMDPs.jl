@@ -29,6 +29,8 @@ end
 														(9,3) => 10.0,
 														(8,8) => 3.0
 													)
+	terminal_state::State = null_state
+	# Any addition to these params should be reflected in modify_γ() below
 end	
 
 POMDPs.isterminal(mdp::RoverGridWorldMDP, s::State) = s == mdp.null_state
@@ -43,7 +45,12 @@ include("policies.jl")
 include("simulation.jl")
 
 function modify_γ(mdp::RoverGridWorldMDP; γ::Float64=mdp.γ)
-	mdp_new = RoverGridWorldMDP(grid_size=mdp.grid_size, null_state=mdp.null_state, p_transition=mdp.p_transition, reward_vals=mdp.reward_vals, γ=γ)
+	mdp_new = RoverGridWorldMDP(grid_size=mdp.grid_size, 
+								null_state=mdp.null_state, 
+								p_transition=mdp.p_transition, 
+								reward_vals=mdp.reward_vals, 
+								γ=γ,
+								terminal_state=mdp.terminal_state)
 	return mdp_new
 end
 
