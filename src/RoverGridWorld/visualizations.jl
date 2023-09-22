@@ -115,7 +115,7 @@ function create_discount_gif()
 	write("gifs/gridworld_vi_γ.gif", frames_γ)
 end
 
-function create_simulated_episode_gif(mdp, policy, steps)
+function create_simulated_episode_gif(mdp, policy, steps; fname = "gridworld_episode")
 	sim_frames = Frames(MIME("image/png"), fps=2)
     frame_i = nothing
 	for i in 1:length(steps)
@@ -125,7 +125,7 @@ function create_simulated_episode_gif(mdp, policy, steps)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
 	!isdir("gifs") && mkdir("gifs") # create "gifs" directory
-	write("gifs/gridworld_episode.gif", sim_frames)
+	write("gifs/"*fname*".gif", sim_frames)
 end
 
 using RollingFunctions
@@ -158,7 +158,7 @@ function plot_simulation_results(results)
     xlabel!("number of simulations")
     ylabel!("mean reward")
     title!("Rolling Mean")
-    xticks!(0:2000:N_sim, latexstring.(0:2000:N_sim))
-    yticks!(1:6, latexstring.(1:6))
+    # xticks!(0:2000:N_sim, latexstring.(0:2000:N_sim))
+    # yticks!(1:6, latexstring.(1:6))
     return fig
 end

@@ -15,6 +15,9 @@ function run_simulation(mdp::RoverGridWorldMDP, policy, q_learning_policy, sarsa
 
     rollsim = RolloutSimulator(max_steps=max_steps);
 
+    temp = simulate(rollsim, mdp, policy)
+    println("reward of 1 sim using VI policy:",temp)
+
 	stats_vi = mean_std([simulate(rollsim, mdp, policy) for _ in 1:N_sim])
 	stats_ql = mean_std([simulate(rollsim, mdp, q_learning_policy) for _ in 1:N_sim])
 	stats_sarsa = mean_std([simulate(rollsim, mdp, sarsa_policy) for _ in 1:N_sim])
