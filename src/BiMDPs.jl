@@ -8,4 +8,8 @@ include("RoverXYTWorld/RoverXYTWorld.jl")
 export
     RoverXYTWorld
 
+include("RoverWorld/RoverWorld.jl")
+export
+    RoverWorld
+
 end # module
