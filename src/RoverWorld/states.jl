@@ -9,7 +9,7 @@ function POMDPs.states(mdp::RoverWorldMDP)
 end
 
 function visited_list(mdp::RoverWorldMDP)
-    num_tgts = length(mdp.reward_vals)
+    num_tgts = length(mdp.tgts)
     return boolean_permutations(num_tgts)
 end
 
@@ -24,7 +24,7 @@ function POMDPs.stateindex(mdp::RoverWorldMDP, s::State)
     num_x = mdp.grid_size[1]
     num_y = mdp.grid_size[2]
     num_t = mdp.max_time
-    num_visited = 2^length(mdp.reward_vals)
+    num_visited = 2^length(mdp.tgts)
     if !((s.x, s.y) == mdp.null_xy)
         return (s.x) + 
                 (s.y - 1) * num_x + 
@@ -54,7 +54,7 @@ function POMDPs.pdf(d::GWUniform, s::State)
     end
 end
 POMDPs.support(d::GWUniform) = (State(x, y, t, v) for x in 1:d.size[1], y in 1:d.size[2], t in 1:d.size[3], v in boolean_permutations(d.size[4]))
-POMDPs.initialstate(mdp::RoverWorldMDP) = GWUniform((mdp.grid_size[1], mdp.grid_size[2], mdp.max_time, length(mdp.reward_vals)))
+POMDPs.initialstate(mdp::RoverWorldMDP) = GWUniform((mdp.grid_size[1], mdp.grid_size[2], mdp.max_time, length(mdp.tgts)))
 
 function boolean_permutations(length::Int)
     return [[((i >> (length - j)) & 1) == 1 for j in 1:length] for i in 0:(2^length - 1)]

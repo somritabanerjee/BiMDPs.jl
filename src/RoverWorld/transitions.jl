@@ -9,7 +9,7 @@ function POMDPs.transition(mdp::RoverWorldMDP, s::State, a::Action)
 
     # Check if we're at a target, to update the visited list
     visited = copy(s.visited)
-    for (tgt_id, ((x, y), (t0, tf), val)) in mdp.reward_vals
+    for (tgt_id, ((x, y), (t0, tf), val)) in mdp.tgts
         if (s.x, s.y) == (x, y) && t0 <= s.t <= tf
             verbose && println("At target $tgt_id at $s")
             visited[tgt_id] = true

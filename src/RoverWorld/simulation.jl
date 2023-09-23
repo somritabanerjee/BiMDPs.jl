@@ -1,10 +1,10 @@
-function print_stepthrough(mdp::RoverWorldMDP, policy; init_state = State(1,1,1,fill(false, length(mdp.reward_vals))))
+function print_stepthrough(mdp::RoverWorldMDP, policy; init_state = State(1,1,1,fill(false, length(mdp.tgts))))
     for (s,a,r) in stepthrough(mdp, policy, init_state, "s,a,r", max_steps=100)
         @info "In state ($(s.x), $(s.y)), taking action $a, receiving reward $r"
     end
 end
 
-function collect_stepthrough(mdp::RoverWorldMDP, policy; init_state = State(1,1,1,fill(false, length(mdp.reward_vals))))
+function collect_stepthrough(mdp::RoverWorldMDP, policy; init_state = State(1,1,1,fill(false, length(mdp.tgts))))
     steps = collect(stepthrough(mdp, policy, init_state, "s,a,r", max_steps=100))
     return steps
 end

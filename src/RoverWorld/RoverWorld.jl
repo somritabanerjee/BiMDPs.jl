@@ -27,7 +27,7 @@ end
 	null_xy::Tuple{Int,Int} = (-1, -1) # terminal state outside of the grid
 	p_transition::Real = 1.0 # probability of transitioning to the correct next state
     γ::Float64 = 0.95
-	reward_vals::Dict{Int, Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Float64}} = Dict(1 => ((10,18),(1,max_time),50),
+	tgts::Dict{Int, Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Float64}} = Dict(1 => ((10,18),(1,max_time),50),
 													2 => ((4,3),(1,max_time),25),
 													3 => ((18,3),(1,max_time),100)
 													) # dictionary mapping target ID to ((x,y), (t0,tf), reward)
@@ -51,7 +51,7 @@ function modify_γ(mdp::RoverWorldMDP; γ::Float64=mdp.γ)
 								max_time = mdp.max_time,
 								null_xy = mdp.null_xy, 
 								p_transition = mdp.p_transition, 
-								reward_vals = mdp.reward_vals, 
+								tgts = mdp.tgts, 
 								γ = γ,
 								exit_xys = mdp.exit_xys)
 	return mdp_new

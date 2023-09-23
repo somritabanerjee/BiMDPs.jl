@@ -1,5 +1,5 @@
 function POMDPs.reward(mdp::RoverWorldMDP, s::State)
-    for (tgt_id, ((x, y), (t0,tf), val)) in mdp.reward_vals
+    for (tgt_id, ((x, y), (t0,tf), val)) in mdp.tgts
         if !s.visited[tgt_id] && (s.x, s.y) == (x, y) && t0 <= s.t <= tf
             return val
         end

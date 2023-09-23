@@ -1,5 +1,5 @@
 # create policy grid showing the best action in each state
-function policy_grid(policy::Policy, xmax::Int, ymax::Int; t::Int = 1, visited::Vector{Bool} = fill(false, length(policy.mdp.reward_vals)))
+function policy_grid(policy::Policy, xmax::Int, ymax::Int; t::Int = 1, visited::Vector{Bool} = fill(false, length(policy.mdp.tgts)))
     arrows = Dict(UP => "↑",
                   DOWN => "↓",
                   LEFT => "←",

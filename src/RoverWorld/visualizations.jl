@@ -31,9 +31,9 @@ function plot_grid_world(mdp::RoverWorldMDP,
 
     # reshape to grid
     (xmax, ymax) = mdp.grid_size
-    Uxy = reshape(U, xmax, ymax, mdp.max_time, 2^length(mdp.reward_vals))
+    Uxy = reshape(U, xmax, ymax, mdp.max_time, 2^length(mdp.tgts))
     t = isnothing(outline_state) ? (isnothing(timestep) ? 1 : timestep) : outline_state.t
-    visited = isnothing(outline_state) ? fill(false, length(mdp.reward_vals)) : outline_state.visited
+    visited = isnothing(outline_state) ? fill(false, length(mdp.tgts)) : outline_state.visited
     visited_idx = findfirst(isequal(visited), visited_list(mdp))
     Uxy_slice = Uxy[:,:,t,visited_idx]
 
