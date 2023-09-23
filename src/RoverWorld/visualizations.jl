@@ -39,12 +39,14 @@ function plot_grid_world(mdp::RoverWorldMDP,
 
 
     # plot values (i.e the U matrix)
+    max_val = maximum(abs, Uxy)
     fig = heatmap(Uxy_slice',
                 legend=:none,
                 aspect_ratio=:equal,
                 framestyle=:box,
                 tickdirection=:out,
-                color=cmap.colors)
+                color=cmap.colors,
+                clims=(-max_val, max_val))
     xlims!(0.5, xmax+0.5)
     ylims!(0.5, ymax+0.5)
     xticks!(1:xmax)
