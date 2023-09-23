@@ -10,6 +10,7 @@ function plot_grid_world(mdp::RoverWorldMDP,
     show_rewards=false,
     outline_state::Union{State, Nothing}=nothing,
     timestep=nothing,
+    cum_reward=nothing,
     fig_title="Grid World Policy Plot")
 
     gr()
@@ -55,9 +56,9 @@ function plot_grid_world(mdp::RoverWorldMDP,
     rectangle(w, h, x, y) = Shape(x .+ [0,w,w,0], y .+ [0,0,h,h])
 
     if show_rewards
-        for s in filter(s->reward(mdp, s) != 0, states(mdp))
+        for s in [State(x, y, t, visited) for x in 1:xmax, y in 1:ymax]
             r = reward(mdp, s)
-            annotate!([(s.x, s.y, (r, :white, :center, 12, "Computer Modern"))])
+            annotate!([(s.x, s.y, (floor(Int,r), :white, :center, 12, "Computer Modern"))])
         end
     end
 
@@ -82,7 +83,8 @@ function plot_grid_world(mdp::RoverWorldMDP,
     fig_title = fig_title * 
                     (isnan(discount)            ? "" : " (iter=$iter, γ=$discount)") * 
                     (isnothing(outline_state)   ? "" : " (t=$t)") * 
-                    (isnothing(timestep)        ? "" : " (t=$t)")
+                    (isnothing(timestep)        ? "" : " (t=$t)") *
+                    (isnothing(cum_reward)      ? "" : " (reward=$cum_reward)")
 
 
     title!(fig_title)
@@ -132,7 +134,10 @@ function create_simulated_episode_gif(mdp, policy, steps; dir="", fname = "gridw
     frame_i = nothing
 	for i in 1:length(steps)
 		frame_i = plot_grid_world(mdp, policy;
-			outline_state=steps[i].s, outline=false)
+			outline_state=steps[i].s, 
+            outline=false, 
+            cum_reward = sum(st.r for st in steps[1:i]), 
+            fig_title="Simulated Episode")
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
@@ -145,7 +150,8 @@ function create_reward_field_evolution_gif(mdp; dir="", fname = "reward_evolutio
     frame_i = nothing
 	for i in 1:1:mdp.max_time
 		frame_i = plot_grid_world(mdp, NothingPolicy();
-			timestep = i, outline=false, fig_title="Reward Field Evolution")
+			timestep = i, outline=false, 
+            show_rewards = true, fig_title="Reward Field Evolution")
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
