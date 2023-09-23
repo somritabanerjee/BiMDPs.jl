@@ -27,6 +27,16 @@ case_dictionary = Dict("case001" => RoverWorld.RoverWorldMDP(
                                                         2=>((9,8),(15,20),50)),
                                             obstacles = [((6,6), (1,20), -5)],
                                             exit_xys = []
+                        ),
+                        "case003" => RoverWorld.RoverWorldMDP(
+                                            grid_size = (10,10),
+                                            max_time = 20,
+                                            tgts = Dict(1=>((9,2),(1,18),50),
+                                                        2=>((9,8),(15,19),50)),
+                                            obstacles = [((6,6), (1,19), -5),
+                                                        [((x,y), (20,20), -5) for x in 1:10, y in 1:9]...,
+                                                        [((x,y), (20,20), -5) for x in 1:9, y in 10:10]...],
+                                            exit_xys = []
                         )
 )
 export case_dictionary            
