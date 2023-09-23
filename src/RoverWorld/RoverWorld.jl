@@ -31,6 +31,9 @@ end
 													2 => ((4,3),(1,max_time),25),
 													3 => ((18,3),(1,max_time),100)
 													) # dictionary mapping target ID to ((x,y), (t0,tf), reward)
+	obstacles::Vector{Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Float64}} = [((6,6), (1,100), -1),
+																((1,1), (1,100), -1)
+																] # list of ((x,y), (t0,tf), penalty) for each obstacle
 	exit_xys::Vector{Tuple{Int,Int}} = [(18, 3)] # if the rover is at any of these xys, the episode terminates
 	# Any addition to these params should be reflected in modify_γ() below
 end
@@ -52,6 +55,7 @@ function modify_γ(mdp::RoverWorldMDP; γ::Float64=mdp.γ)
 								null_xy = mdp.null_xy, 
 								p_transition = mdp.p_transition, 
 								tgts = mdp.tgts, 
+								obstacles = mdp.obstacles,
 								γ = γ,
 								exit_xys = mdp.exit_xys)
 	return mdp_new

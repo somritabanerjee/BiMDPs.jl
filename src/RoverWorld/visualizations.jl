@@ -92,7 +92,7 @@ end
 
 cmap = ColorScheme([Colors.RGB(180/255, 0.0, 0.0), Colors.RGB(1, 1, 1), Colors.RGB(0.0, 100/255, 0.0)], "custom", "threetone, red, white, and green")
 
-function create_value_iteration_gif(mdp::RoverWorldMDP)
+function create_value_iteration_gif(mdp::RoverWorldMDP; dir="gifs")
 	frames = Frames(MIME("image/png"), fps=2)
 	push!(frames, plot_grid_world(mdp, NothingPolicy(), 0, mdp.γ; outline=true))
 	last_frame = nothing
@@ -105,11 +105,11 @@ function create_value_iteration_gif(mdp::RoverWorldMDP)
 		push!(frames, last_frame)
 	end
 	[push!(frames, last_frame) for _ in 1:10] # duplicate last frame
-	!isdir("gifs") && mkdir("gifs") # create "gifs" directory
-	write("gifs/gridworld_vi.gif", frames)
+	!isdir(dir) && mkdir(dir) # create directory
+	write(dir*"/"*"gridworld_vi.gif", frames)
 end
 
-function create_discount_gif()
+function create_discount_gif(; dir="gifs")
 	frames_γ = Frames(MIME("image/png"), fps=2)
 	last_frame_γ = nothing
 	for γ_iter in 0:0.05:1
@@ -123,11 +123,11 @@ function create_discount_gif()
 		push!(frames_γ, last_frame_γ)
 	end
 	[push!(frames_γ, last_frame_γ) for _ in 1:10] # duplicate last frame
-	!isdir("gifs") && mkdir("gifs") # create "gifs" directory
-	write("gifs/gridworld_vi_γ.gif", frames_γ)
+	!isdir(dir) && mkdir(dir) # create directory
+	write(dir*"/"*"gridworld_vi_γ.gif", frames_γ)
 end
 
-function create_simulated_episode_gif(mdp, policy, steps; fname = "gridworld_episode")
+function create_simulated_episode_gif(mdp, policy, steps; dir="", fname = "gridworld_episode")
 	sim_frames = Frames(MIME("image/png"), fps=2)
     frame_i = nothing
 	for i in 1:length(steps)
@@ -136,11 +136,11 @@ function create_simulated_episode_gif(mdp, policy, steps; fname = "gridworld_epi
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
-	!isdir("gifs") && mkdir("gifs") # create "gifs" directory
-	write("gifs/"*fname*".gif", sim_frames)
+	!isdir(dir) && mkdir(dir) # create directory
+	write(dir*"/"*fname*".gif", sim_frames)
 end
 
-function create_reward_field_evolution_gif(mdp; fname = "gridworld_reward_evolution")
+function create_reward_field_evolution_gif(mdp; dir="", fname = "reward_evolution")
 	sim_frames = Frames(MIME("image/png"), fps=2)
     frame_i = nothing
 	for i in 1:1:mdp.max_time
@@ -149,13 +149,13 @@ function create_reward_field_evolution_gif(mdp; fname = "gridworld_reward_evolut
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
-	!isdir("gifs") && mkdir("gifs") # create "gifs" directory
-	write("gifs/"*fname*".gif", sim_frames)
+	!isdir(dir) && mkdir(dir) # create directory
+	write(dir*"/"*fname*".gif", sim_frames)
 end
 
 using RollingFunctions
 using LaTeXStrings
-function plot_simulation_results(results)
+function plot_simulation_results(results; dir="results", fname="simulation_results")
     N_sim = length(results.value_iteration.r)
     println("N_sim = $N_sim")
     window = floor(Int, min(500, N_sim/3))
@@ -183,7 +183,7 @@ function plot_simulation_results(results)
     xlabel!("number of simulations")
     ylabel!("mean reward")
     title!("Rolling Mean")
-    # xticks!(0:2000:N_sim, latexstring.(0:2000:N_sim))
-    # yticks!(1:6, latexstring.(1:6))
+    !isdir(dir) && mkdir(dir) # create directory
+	savefig(fig, dir*"/"*fname)
     return fig
 end
