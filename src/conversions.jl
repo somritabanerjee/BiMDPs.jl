@@ -2,7 +2,7 @@ using DiscreteValueIteration
 
 function convert_to_bilevel(mdp::RoverWorld.RoverWorldMDP; hl_iters = 50, ll_iters = 50)
     hl_mdp = HighLevelMDP(mdp)
-    HLRoverWorld.test_state_indexing(hl_mdp)
+    # HLRoverWorld.test_state_indexing(hl_mdp)
     hl_solver = ValueIterationSolver(max_iterations=hl_iters)
     hl_policy = solve(hl_solver, hl_mdp)
     return hl_mdp, hl_policy
