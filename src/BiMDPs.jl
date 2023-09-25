@@ -1,16 +1,13 @@
 module BiMDPs
 
 include("RoverGridWorld/RoverGridWorld.jl")
-export
-    RoverGridWorld
+export RoverGridWorld
 
 include("RoverXYTWorld/RoverXYTWorld.jl")
-export
-    RoverXYTWorld
+export RoverXYTWorld
 
 include("RoverWorld/RoverWorld.jl")
-export
-    RoverWorld
+export RoverWorld
 
 case_dictionary = Dict("case001" => RoverWorld.RoverWorldMDP(
                                             grid_size = (10,10),
@@ -62,6 +59,15 @@ case_dictionary = Dict("case001" => RoverWorld.RoverWorldMDP(
                                             exit_xys = [(10,10)]
                         )
 )
-export case_dictionary            
+export case_dictionary  
+
+include("HLRoverWorld/HLRoverWorld.jl")
+export HLRoverWorld
+
+include("conversions.jl")
+export convert_to_bilevel
+
+include("utils.jl")
+export optimality_vs_compute
 
 end # module
