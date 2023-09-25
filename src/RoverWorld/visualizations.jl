@@ -193,3 +193,17 @@ function plot_simulation_results(results; dir="results", fname="simulation_resul
 	savefig(fig, dir*"/"*fname)
     return fig
 end
+
+function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_compute")
+    fig = plot()
+    for (solver_name, (comp_times, mean_rewards, stddev_rewards)) in results
+        errors = log.(stddev_rewards ./ 3)
+        plot!(comp_times, mean_rewards, ribbon=errors, fillalpha = 0.2, label=solver_name)
+    end
+    xlabel!("computation time (s)")
+    ylabel!("mean reward")
+    title!("Optimality vs. Compute Time")
+    !isdir(dir) && mkdir(dir) # create directory
+    savefig(fig, dir*"/"*fname)
+    return fig
+end
