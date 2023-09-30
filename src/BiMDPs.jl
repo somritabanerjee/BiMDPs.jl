@@ -64,6 +64,9 @@ export case_dictionary
 include("HLRoverWorld/HLRoverWorld.jl")
 export HLRoverWorld
 
+include("LLRoverWorld/LLRoverWorld.jl")
+export LLRoverWorld
+
 include("conversions.jl")
 export convert_to_bilevel
 
