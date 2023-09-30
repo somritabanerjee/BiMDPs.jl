@@ -38,7 +38,9 @@ end
 function go_to_target(mdp::HLRoverWorldMDP, s::HLState, tgt_id::Int)
     ((tgt_x, tgt_y), (t0, tf), r) = mdp.tgts[tgt_id]
     time_to_target = manhattan_distance((s.x, s.y), (tgt_x, tgt_y))
-    if 1 ≤ s.t + time_to_target ≤ mdp.max_time
+    if time_to_target == 0
+        return HLState(tgt_x, tgt_y, s.t + 1, s.visited)
+    elseif 1 ≤ s.t + time_to_target ≤ mdp.max_time
         return HLState(tgt_x, tgt_y, s.t + time_to_target, s.visited)
     else
         return HLState(s.x, s.y, mdp.max_time, s.visited)

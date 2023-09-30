@@ -68,7 +68,7 @@ include("LLRoverWorld/LLRoverWorld.jl")
 export LLRoverWorld
 
 include("conversions.jl")
-export convert_to_bilevel
+export solve_using_bilevel_mdp
 
 include("utils.jl")
 export optimality_vs_compute
