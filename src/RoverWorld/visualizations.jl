@@ -198,6 +198,7 @@ function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_comput
     fig = plot()
     for (solver_name, (comp_times, mean_rewards, stddev_rewards)) in results
         errors = log.(stddev_rewards ./ 3)
+        errors = [e>0 ? e : 0.0 for e in errors]
         plot!(comp_times, mean_rewards, ribbon=errors, fillalpha = 0.2, label=solver_name)
     end
     xlabel!("computation time (s)")

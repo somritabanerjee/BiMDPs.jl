@@ -63,6 +63,10 @@ function rand_state(rng::AbstractRNG, mdp::HLRoverWorldMDP)
     return HLState(rand(rng, 1:mdp.grid_size[1]), rand(rng, 1:mdp.grid_size[2]), rand(rng, 1:mdp.max_time), rand(visited_list(mdp)))
 end
 
+function rand_initial_state(rng::AbstractRNG, mdp::HLRoverWorldMDP)
+    return HLState(rand(rng, 1:mdp.grid_size[1]), rand(rng, 1:mdp.grid_size[2]), 1, fill(false, length(mdp.tgts)))
+end
+
 function test_state_indexing(mdp::HLRoverWorldMDP)
     for (i, s) in enumerate(POMDPs.states(mdp))
         # println("s: $s")
