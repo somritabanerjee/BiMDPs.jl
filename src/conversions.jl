@@ -3,7 +3,7 @@ using DiscreteValueIteration
 function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing)
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}()
     comp_time = 0.0
-    discounted_reward = 0.0
+    disc_reward = 0.0
     # Create a HL MDP
     hl_mdp = HighLevelMDP(mdp)
     hl_solver = ValueIterationSolver(max_iterations=max_iters)
@@ -31,13 +31,29 @@ function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64
         comp_time += ll_comp_time
         for (ll_s, ll_a, ll_r) in stepthrough(ll_mdp, ll_policy, ll_mdp.init_state, "s,a,r", max_steps=ll_mdp.max_time)
             push!(sar_history, (ll_s, ll_a, ll_r))
-            discounted_reward = ll_r + mdp.γ * discounted_reward
+            disc_reward = ll_r + mdp.γ * disc_reward
         end
         # Update HL state
         last_ll_s = last(sar_history)[1]
         hl_s = HLState_from_LLState(last_ll_s, hl_s, hl_a, hl_mdp)
     end
-    return comp_time, discounted_reward, sar_history
+    return comp_time, disc_reward, sar_history
+end
+
+function solve_using_finegrained_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing)
+    sar_history = Vector{Tuple{RoverWorld.State, RoverWorld.Action, Float64}}()
+    disc_reward = 0.0
+    solver = ValueIterationSolver(max_iterations=max_iters)
+    policy, comp_time = @timed solve(solver, mdp)
+    hr = HistoryRecorder()
+    if isnothing(init_state)
+        rng = Random.seed!(1)
+        init_state = RoverWorld.rand_starting_state(rng, mdp)
+    end
+    history = simulate(hr, mdp, policy, init_state)
+    sar_history = [(h[:s], h[:a], h[:r]) for h in history]
+    disc_reward = discounted_reward(history)
+    return comp_time, disc_reward, sar_history
 end
 
 function HLState_from_LLState(ll_s::LLRoverWorld.LLState, prev_hl_s::HLRoverWorld.HLState, prev_hl_a::HLRoverWorld.HLAction, hl_mdp::HLRoverWorld.HLRoverWorldMDP)

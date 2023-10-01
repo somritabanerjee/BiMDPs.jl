@@ -68,9 +68,11 @@ include("LLRoverWorld/LLRoverWorld.jl")
 export LLRoverWorld
 
 include("conversions.jl")
-export solve_using_bilevel_mdp
+export solve_using_bilevel_mdp, solve_using_finegrained_mdp
 
 include("utils.jl")
 export optimality_vs_compute
+
+include("visualizations.jl")
 
 end # module
