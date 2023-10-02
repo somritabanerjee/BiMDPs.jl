@@ -6,7 +6,7 @@ using DiscreteValueIteration
 using TabularTDLearning
 using Random
 
-function optimality_vs_compute(mdp::RoverWorld.RoverWorldMDP, solvers_iters_Nsim::Vector{Tuple{String,Vector{Int},Int}}; verbose = false)
+function optimality_vs_compute(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRoverWorldMDP}, solvers_iters_Nsim::Vector{Tuple{String,Vector{Int},Int}}; verbose = false)
     results = Dict{String, Tuple{Vector{Float64}, Vector{Float64}, Vector{Float64}}}() # dictionary mapping solver_name to (comp_time, mean_reward, stddev_reward)
     for (solver_name, max_iters_vec, N_sim) in solvers_iters_Nsim
         comp_times = Vector{Float64}(undef, length(max_iters_vec))
@@ -89,7 +89,8 @@ function create_rover_world(grid_size::Tuple{Int64,Int64},
                             permanent_obstacles::Vector{Tuple{Tuple{Int64,Int64}, Float64}} = [((10,10), -20.0)],                            
                             exit_xys=[(num_rows, num_cols)],
                             include_measurement = true,
-                            measure_reward = 2.0
+                            measure_reward = 2.0,
+                            force_measurement = false
                             )
     if shadow == :true
         obstacles_grid = create_grid_obstacles_shadow(grid_size[1], grid_size[2], max_time; exit_xys=exit_xys)
@@ -108,17 +109,30 @@ function create_rover_world(grid_size::Tuple{Int64,Int64},
         end
         tgts_dict[i] = ((x,y),(1,shadow_time-1),v)
     end
-    rgw = RoverWorld.RoverWorldMDP(
-        grid_size = grid_size,
-        max_time = max_time,
-        tgts = tgts_dict,
-        obstacles_grid = obstacles_grid,
-        exit_xys = exit_xys,
-        include_measurement = include_measurement,
-        measure_reward = measure_reward
-    )
-    RoverWorld.test_state_indexing(rgw)
-    return rgw
+    if force_measurement
+        mrgw = MRoverWorld.MRoverWorldMDP(
+            grid_size = grid_size,
+            max_time = max_time,
+            tgts = tgts_dict,
+            obstacles_grid = obstacles_grid,
+            exit_xys = exit_xys,
+            measure_reward = measure_reward
+        )
+        MRoverWorld.test_state_indexing(mrgw)
+        return mrgw
+    else
+        rgw = RoverWorld.RoverWorldMDP(
+            grid_size = grid_size,
+            max_time = max_time,
+            tgts = tgts_dict,
+            obstacles_grid = obstacles_grid,
+            exit_xys = exit_xys,
+            include_measurement = include_measurement,
+            measure_reward = measure_reward
+        )
+        RoverWorld.test_state_indexing(rgw)
+        return rgw
+    end
 end
 
 function create_grid_obstacles_shadow(num_rows, num_cols, max_time; start_from::Symbol=:bottom_right, exit_xys=[(num_rows, num_cols)])
@@ -146,4 +160,12 @@ function create_grid_obstacles_shadow(num_rows, num_cols, max_time; start_from::
     end
     
     return obstacles_grid
+end
+
+function manhattan_distance(p1::Tuple{Int,Int}, p2::Tuple{Int,Int})
+    return abs(p1[1] - p2[1]) + abs(p1[2] - p2[2])
+end
+
+function euclidean_distance(p1::Tuple{Int,Int}, p2::Tuple{Int,Int})
+    return sqrt((p1[1] - p2[1])^2 + (p1[2] - p2[2])^2)
 end

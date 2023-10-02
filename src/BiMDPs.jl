@@ -9,6 +9,9 @@ export RoverXYTWorld
 include("RoverWorld/RoverWorld.jl")
 export RoverWorld
 
+include("MRoverWorld/MRoverWorld.jl")
+export MRoverWorld
+
 include("utils.jl")
 export optimality_vs_compute
 
@@ -134,6 +137,15 @@ case_dictionary = Dict("case009" => create_rover_world((10,10),
                                             exit_xys = [(10,10)],
                                             include_measurement = false,
                                             measure_reward = 0.0
+                        ),
+                        "case011" => create_rover_world((10,10), 
+                                            25, 
+                                            tgts=[((9,2), 50.0), ((9,8), 50.0)], 
+                                            shadow=:true,
+                                            shadow_value=-5,
+                                            permanent_obstacles=[((5,5), -20.0), ((5,6), -20.0), ((6,5), -20.0), ((6,6), -20.0)],
+                                            exit_xys = [(10,10)],
+                                            force_measurement = true
                         )
 );
 export case_dictionary  
@@ -143,6 +155,9 @@ export HLRoverWorld
 
 include("LLRoverWorld/LLRoverWorld.jl")
 export LLRoverWorld
+
+include("MLLRoverWorld/MLLRoverWorld.jl")
+export MLLRoverWorld
 
 include("conversions.jl")
 export solve_using_bilevel_mdp, solve_using_finegrained_mdp
