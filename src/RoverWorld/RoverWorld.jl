@@ -19,7 +19,7 @@ struct State
 	visited::Vector{Bool} # visited[i] = true if target i has been visited
 end
 
-@enum Action UP DOWN LEFT RIGHT # TODO: Add diagonals
+@enum Action UP DOWN LEFT RIGHT MEASURE # TODO: Add diagonals
 
 @with_kw struct RoverWorldMDP <: MDP{State, Action}
 	grid_size::Tuple{Int,Int} = (20, 20)   # size of the grid
@@ -35,6 +35,8 @@ end
 																((1,1), (1,100), -1)
 																] # list of ((x,y), (t0,tf), penalty) for each obstacle
 	exit_xys::Vector{Tuple{Int,Int}} = [(18, 3)] # if the rover is at any of these xys, the episode terminates
+	include_measurement::Bool = false
+	measure_reward::Float64 = 2.0
 	# Any addition to these params should be reflected in modify_γ() below
 end
 
@@ -57,7 +59,9 @@ function modify_γ(mdp::RoverWorldMDP; γ::Float64=mdp.γ)
 								tgts = mdp.tgts, 
 								obstacles = mdp.obstacles,
 								γ = γ,
-								exit_xys = mdp.exit_xys)
+								exit_xys = mdp.exit_xys,
+								include_measurement = mdp.include_measurement,
+								measure_reward = mdp.measure_reward)
 	return mdp_new
 end
 

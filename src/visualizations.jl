@@ -93,13 +93,29 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
             marker=(defpath.markershape, defpath.markersize, defpath.markeralpha, defpath.color), 
             label="Path")
 
-    ## Plot rewards
-    labeled = false
+    ## Plot target rewards + measurement rewards
+    labeled_tgts = false
+    labeled_measurements = false
     for tstep in 1:length(sar_history)
         (s, a, r) = sar_history[tstep]
         if r > 0
-            scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled ? "" : "Rewards")
-            labeled = true
+            found = false
+            if a == RoverWorld.MEASURE
+                println("Found measurement at $(s.x), $(s.y), $(s.t) $a !")
+                scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements")
+                found = true
+                labeled_measurements = true
+            end
+            if !found
+                for (tgt_id, ((x, y), (t0,tf), val)) in mdp.tgts
+                    if (s.x, s.y) == (x, y) && t0 <= s.t <= tf
+                        scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled_tgts ? "" : "Rewards")
+                        labeled_tgts = true
+                        found = true
+                        break
+                    end
+                end
+            end
         end
     end
     
@@ -110,7 +126,7 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
             scatter!([x_obs], [y_obs], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
             labeled = true
         end
-    end    
+    end
 
     ## Plot finish point
     finish_point = last(sar_history)[1]
@@ -134,7 +150,7 @@ obs = PlotElement("red", :square, 10, 0.5, "Obstacles")
 llp = PlotElement("red", :circle, 3, 0.5, "Low-level path")
 hlp = PlotElement("blue", :star5, 10, 0.5, "High-level path")
 targets = PlotElement(hlp.color, hlp.markershape, hlp.markersize, hlp.markeralpha, "Targets")
-meas = PlotElement("green", :diamond, 5, 0.5, "Measurements")
+meas = PlotElement("green", :dtriangle, 10, 0.5, "Measurements")
 # meas = PlotElement("green", :star-triangle-down-dot, 5, 0.5, "Measurements")
 
 start = PlotElement("black", :x, 8, 1.0, "Start point")

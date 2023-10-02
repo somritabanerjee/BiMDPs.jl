@@ -3,7 +3,8 @@ function policy_grid(policy::Policy, xmax::Int, ymax::Int; t::Int = 1, visited::
     arrows = Dict(UP => "↑",
                   DOWN => "↓",
                   LEFT => "←",
-                  RIGHT => "→")
+                  RIGHT => "→",
+                  MEASURE => "=")
 
     grid = Array{String}(undef, xmax, ymax)
     for x = 1:xmax, y = 1:xmax

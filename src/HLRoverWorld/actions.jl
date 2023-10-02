@@ -1,7 +1,4 @@
 
-function Nₐ(mdp::HLRoverWorldMDP)
-    return length(mdp.tgts) + length(mdp.exit_xys)
-end
 function POMDPs.actions(mdp::HLRoverWorldMDP)
     return [[HLAction(i) for i in 1:length(mdp.tgts)]..., [HLAction(-i) for i in 1:length(mdp.exit_xys)]...]
 end
