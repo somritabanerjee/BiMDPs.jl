@@ -39,6 +39,16 @@ function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
                 label="")
         end
     end
+
+    ## Plot measurements
+    labeled_measurements = false
+    for tstep in 1:length(sar_history)
+        (s, a, r) = sar_history[tstep]
+        if (a == LLRoverWorld.MEASURE)
+            scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements")
+            labeled_measurements = true
+        end
+    end
     
     ## Plot obstacles
     labeled = false
@@ -151,7 +161,6 @@ llp = PlotElement("red", :circle, 3, 0.5, "Low-level path")
 hlp = PlotElement("blue", :star5, 10, 0.5, "High-level path")
 targets = PlotElement(hlp.color, hlp.markershape, hlp.markersize, hlp.markeralpha, "Targets")
 meas = PlotElement("green", :dtriangle, 10, 0.5, "Measurements")
-# meas = PlotElement("green", :star-triangle-down-dot, 5, 0.5, "Measurements")
 
 start = PlotElement("black", :x, 8, 1.0, "Start point")
 finish = PlotElement("black", :diamond, 8, 1.0, "End point")

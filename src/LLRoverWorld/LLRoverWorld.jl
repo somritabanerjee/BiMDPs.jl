@@ -12,7 +12,7 @@ struct LLState
 	t::Int # discrete time
 end
 
-@enum LLAction UP DOWN LEFT RIGHT
+@enum LLAction UP DOWN LEFT RIGHT MEASURE
 
 @with_kw struct LLRoverWorldMDP <: MDP{LLState, LLAction}
 	grid_size::Tuple{Int,Int} = (20, 20)   # size of the grid
@@ -26,7 +26,8 @@ end
 																] # list of ((x,y), (t0,tf), penalty) for each obstacle
 	exit_xys::Vector{Tuple{Int,Int}} = [(18, 3)] # if the rover is at any of these xys, the episode terminates
 	init_state::LLState = LLState(1, 1, 1)
-	# Any addition to these params should be reflected in modify_γ() below
+	include_measurement::Bool = false
+	measure_reward::Float64 = 2.0
 end
 
 POMDPs.isterminal(mdp::LLRoverWorldMDP, s::LLState) = ((s.x, s.y) == mdp.null_xy)

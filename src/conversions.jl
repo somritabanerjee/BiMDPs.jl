@@ -93,5 +93,7 @@ function LowLevelMDP(mdp::RoverWorld.RoverWorldMDP, hl_s::HLRoverWorld.HLState, 
                             current_tgt = mdp.tgts[hl_a.tgt],
                             obstacles = mdp.obstacles,
                             exit_xys = mdp.exit_xys,
+                            include_measurement = mdp.include_measurement,
+                            measure_reward = mdp.measure_reward,
                             init_state = LLRoverWorld.LLState(hl_s.x, hl_s.y, hl_s.t))
 end
