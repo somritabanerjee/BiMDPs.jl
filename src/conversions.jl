@@ -1,6 +1,7 @@
 using DiscreteValueIteration
 
 function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing)
+    verbose = false
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}()
     comp_time = 0.0
     disc_reward = 0.0
@@ -8,6 +9,7 @@ function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64
     hl_mdp = HighLevelMDP(mdp)
     hl_solver = ValueIterationSolver(max_iterations=max_iters)
     hl_policy, hl_comp_time = @timed solve(hl_solver, hl_mdp)
+    verbose && println("Done solving HL MDP")
     comp_time += hl_comp_time
     if isnothing(init_state)
         rng = Random.default_rng()
@@ -18,24 +20,35 @@ function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64
     finished = false
     # While state is in bounds
     while !isnothing(hl_s) && HLRoverWorld.inbounds(hl_mdp, hl_s)
+        verbose && println("HL state: $hl_s")
         hl_a = nothing;
         # Do a step of HL MDP
         for (hl_s_step, hl_a_step, _) in stepthrough(hl_mdp, hl_policy, hl_s, "s,a,r", max_steps=1)
             hl_s = hl_s_step; hl_a = hl_a_step;
         end
+        verbose && println("HL action: $hl_a")
         push!(sar_history, (hl_s, hl_a, nothing))
         # Create a low level mdp using this HL action
         ll_mdp = LowLevelMDP(mdp, hl_s, hl_a)
         ll_solver = ValueIterationSolver(max_iterations=max_iters)
         ll_policy, ll_comp_time = @timed solve(ll_solver, ll_mdp)
+        verbose && println("Done solving LL MDP")
         comp_time += ll_comp_time
         for (ll_s, ll_a, ll_r) in stepthrough(ll_mdp, ll_policy, ll_mdp.init_state, "s,a,r", max_steps=ll_mdp.max_time)
             push!(sar_history, (ll_s, ll_a, ll_r))
             disc_reward = ll_r + mdp.γ * disc_reward
+            verbose && println("    LL: in state $ll_s, taking action $ll_a with reward $ll_r")
         end
+        verbose && println("Done stepthrough LL MDP")
         # Update HL state
         last_ll_s = last(sar_history)[1]
-        hl_s = HLState_from_LLState(last_ll_s, hl_s, hl_a, hl_mdp)
+        verbose && println("last LL state: $last_ll_s")
+        new_hl_s = HLState_from_LLState(last_ll_s, hl_s, hl_a, hl_mdp)
+        verbose && println("NEW HL state: $new_hl_s")
+        if new_hl_s == hl_s
+            break
+        end
+        hl_s = new_hl_s
     end
     return comp_time, disc_reward, sar_history
 end
