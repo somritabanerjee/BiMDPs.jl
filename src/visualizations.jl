@@ -111,7 +111,6 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
         if r > 0
             found = false
             if a == RoverWorld.MEASURE
-                println("Found measurement at $(s.x), $(s.y), $(s.t) $a !")
                 scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements")
                 found = true
                 labeled_measurements = true
@@ -141,8 +140,9 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     ## Plot finish point
     finish_point = last(sar_history)[1]
     scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label)
-
+    plot!(legend=:best)
     title!(fig_title)
+    !isdir(dir) && mkdir(dir) # create directory
     savefig(fig, joinpath(dir, fname))
     return fig
 end
