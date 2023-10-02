@@ -10,7 +10,7 @@ function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64
     hl_policy, hl_comp_time = @timed solve(hl_solver, hl_mdp)
     comp_time += hl_comp_time
     if isnothing(init_state)
-        rng = Random.seed!(1)
+        rng = Random.default_rng()
         hl_s = HLRoverWorld.rand_starting_state(rng, hl_mdp)
     else
         hl_s = HLState_from_RoverState(init_state)
