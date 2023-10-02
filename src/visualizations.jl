@@ -14,19 +14,31 @@ function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     start_point = sar_history[1][1]
     scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label)
     
-    ## Plot high level targets
-    HL_history = [(i, (s, a, r)) for (i, (s, a, r)) in enumerate(sar_history) if s isa HLRoverWorld.HLState && i>1]
-    for (hl_num, (i, (s, a, r))) in enumerate(HL_history)
-        markeralpha = hl_num / length(HL_history)
-        scatter!([(s.x, s.y)], color=targets.color, markersize=targets.markersize, markeralpha=markeralpha, label="High-level tgt $hl_num")
+    ## Plot high level targets and path leading to them
+    hl_num = 0; hl_locs = Vector{Int64}();
+    for tstep in 1:length(sar_history)
+        (s, a, r) = sar_history[tstep]
+        if s isa HLRoverWorld.HLState && tstep > 1
+            hl_num += 1
+            push!(hl_locs, tstep)
+            color_seq = hl_num
+            scatter!([(s.x, s.y)], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $hl_num")
+            prev = hl_num == 1 ? 0 : hl_locs[hl_num-1]
+            LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<tstep && s isa LLRoverWorld.LLState)]
+            plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
+                color = color_seq,
+                marker = (llp.markershape, llp.markersize, llp.markeralpha),
+                label="")
+        end
+        if tstep == length(sar_history)
+            prev = hl_num > 0 ? hl_locs[hl_num] : 0
+            LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<=tstep && s isa LLRoverWorld.LLState)]
+            plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
+                color = defpath.color,
+                marker = (llp.markershape, llp.markersize, llp.markeralpha),
+                label="")
+        end
     end
-    
-    ## Plot low level path
-    LL_history = [(i, (s, a, r)) for (i, (s, a, r)) in enumerate(sar_history) if s isa LLRoverWorld.LLState]
-    plot!([s.x for (i, (s, a, r)) in LL_history], [s.y for (i, (s, a, r)) in LL_history], 
-            color = llp.color, 
-            marker=(llp.markershape, llp.markersize, [i/length(sar_history) for (i, (s, a, r)) in LL_history], llp.color), 
-            label="Low-level path")
     
     ## Plot obstacles    
     for ((x_obs, y_obs), (t0_obs, tf_obs), val_obs) in mdp.obstacles
@@ -70,26 +82,40 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
-    # for (i, (s, a, r)) in enumerate(sar_history)
-    #     color = "black"
-    #     markersize = 5
-    #     markeralpha = i / length(sar_history)
-    #     scatter!([(s.x, s.y)], color=color, markersize=markersize, markeralpha=markeralpha)
-    # end
+    
+    ## Plot start point
+    start_point = sar_history[1][1]
+    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label)
+    
+    ## Plot path
     plot!([s.x for (i, (s, a, r)) in enumerate(sar_history)], [s.y for (i, (s, a, r)) in enumerate(sar_history)], 
-            color = "black", 
-            marker=(:circle, 5, [i/length(sar_history) for (i, (s, a, r)) in enumerate(sar_history)], :black), 
-            label="Fine-grained path")
+            color = defpath.color, 
+            marker=(defpath.markershape, defpath.markersize, defpath.markeralpha, defpath.color), 
+            label="Path")
+
+    ## Plot rewards
+    labeled = false
+    for tstep in 1:length(sar_history)
+        (s, a, r) = sar_history[tstep]
+        if r > 0
+            scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled ? "" : "Rewards")
+            labeled = true
+        end
+    end
+    
+    ## Plot obstacles
     for ((x_obs, y_obs), (t0_obs, tf_obs), val_obs) in mdp.obstacles
         labeled = false
         if t0_obs == 1 && tf_obs == mdp.max_time
-            scatter!([x_obs], [y_obs], color="black", markershape=:utriangle, markersize=10, markeralpha=0.5, label= labeled ? "" : "Obstacles")
+            scatter!([x_obs], [y_obs], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
             labeled = true
         end
     end    
-    # Landing site
-    # Rewards/targets
-    # Measurements
+
+    ## Plot finish point
+    finish_point = last(sar_history)[1]
+    scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label)
+
     title!(fig_title)
     savefig(fig, joinpath(dir, fname))
     return fig
@@ -103,14 +129,13 @@ struct PlotElement
     label::String
 end
 
-fgp = PlotElement("black", :circle, 5, 0.5, "Path")
-obs = PlotElement("black", :utriangle, 10, 0.5, "Obstacles")
-llp = PlotElement("red", :circle, 5, 0.5, "Low-level path")
-# hlp = PlotElement("blue", :star, 10, 0.5, "High-level path")
+defpath = PlotElement("black", :circle, 5, 0.5, "Path")
+obs = PlotElement("red", :square, 10, 0.5, "Obstacles")
+llp = PlotElement("red", :circle, 3, 0.5, "Low-level path")
 hlp = PlotElement("blue", :star5, 10, 0.5, "High-level path")
 targets = PlotElement(hlp.color, hlp.markershape, hlp.markersize, hlp.markeralpha, "Targets")
 meas = PlotElement("green", :diamond, 5, 0.5, "Measurements")
 # meas = PlotElement("green", :star-triangle-down-dot, 5, 0.5, "Measurements")
 
-start = PlotElement("red", :x, 8, 0.5, "Start point")
-finish = PlotElement("red", :diamond, 8, 1.0, "End point")
+start = PlotElement("black", :x, 8, 1.0, "Start point")
+finish = PlotElement("black", :diamond, 8, 1.0, "End point")
