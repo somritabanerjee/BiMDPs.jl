@@ -40,9 +40,9 @@ function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
         end
     end
     
-    ## Plot obstacles    
+    ## Plot obstacles
+    labeled = false
     for ((x_obs, y_obs), (t0_obs, tf_obs), val_obs) in mdp.obstacles
-        labeled = false
         if t0_obs == 1 && tf_obs == mdp.max_time
             scatter!([x_obs], [y_obs], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
             # plot!([x_obs], [y_obs], reverse(rock_img, dims=1), yflip=false, aspect_ratio=:none, label= labeled ? "" : "Obstacles")
@@ -104,8 +104,8 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     end
     
     ## Plot obstacles
+    labeled = false
     for ((x_obs, y_obs), (t0_obs, tf_obs), val_obs) in mdp.obstacles
-        labeled = false
         if t0_obs == 1 && tf_obs == mdp.max_time
             scatter!([x_obs], [y_obs], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
             labeled = true
