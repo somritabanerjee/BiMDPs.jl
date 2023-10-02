@@ -7,11 +7,9 @@ function POMDPs.reward(mdp::RoverWorldMDP, s::State, a::Action)
             is_tgt = true
         end
     end
-    for ((x, y), (t0,tf), penalty) in mdp.obstacles
-        if (s.x, s.y) == (x, y) && t0 <= s.t <= tf
-            r += penalty
-            is_obstacle = true
-        end
+    if mdp.obstacles_grid[s.x, s.y, s.t] != 0.0
+        r += mdp.obstacles_grid[s.x, s.y, s.t]
+        is_obstacle = true
     end
     if a == MEASURE && !is_tgt && !is_obstacle
         r += mdp.measure_reward

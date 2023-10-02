@@ -31,9 +31,7 @@ end
 													2 => ((4,3),(1,max_time),25),
 													3 => ((18,3),(1,max_time),100)
 													) # dictionary mapping target ID to ((x,y), (t0,tf), reward)
-	obstacles::Vector{Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Float64}} = [((6,6), (1,100), -1),
-																((1,1), (1,100), -1)
-																] # list of ((x,y), (t0,tf), penalty) for each obstacle
+	obstacles_grid::Array{Float64,3} = zeros(Float64, (grid_size[1], grid_size[2], max_time)) # grid of obstacles
 	exit_xys::Vector{Tuple{Int,Int}} = [(18, 3)] # if the rover is at any of these xys, the episode terminates
 	include_measurement::Bool = false
 	measure_reward::Float64 = 2.0
@@ -57,12 +55,24 @@ function modify_γ(mdp::RoverWorldMDP; γ::Float64=mdp.γ)
 								null_xy = mdp.null_xy, 
 								p_transition = mdp.p_transition, 
 								tgts = mdp.tgts, 
-								obstacles = mdp.obstacles,
+								obstacles_grid = mdp.obstacles_grid,
 								γ = γ,
 								exit_xys = mdp.exit_xys,
 								include_measurement = mdp.include_measurement,
 								measure_reward = mdp.measure_reward)
 	return mdp_new
+end
+
+function print_details(mdp::RoverWorldMDP)
+	println("========== RoverWorldMDP ==========")
+	for f in fieldnames(typeof(mdp))
+		if f == :obstacles_grid
+			println("$f: omitting.")
+		else
+			println("$f: $(getfield(mdp, Symbol(f)))")
+		end
+	end
+	println("=====================================")
 end
 
 end # module

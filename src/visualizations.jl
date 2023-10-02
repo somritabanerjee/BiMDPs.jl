@@ -49,14 +49,15 @@ function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
             labeled_measurements = true
         end
     end
-    
+
     ## Plot obstacles
     labeled = false
-    for ((x_obs, y_obs), (t0_obs, tf_obs), val_obs) in mdp.obstacles
-        if t0_obs == 1 && tf_obs == mdp.max_time
-            scatter!([x_obs], [y_obs], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
-            # plot!([x_obs], [y_obs], reverse(rock_img, dims=1), yflip=false, aspect_ratio=:none, label= labeled ? "" : "Obstacles")
-            labeled = true
+    for x in 1:xmax
+        for y in 1:ymax
+            if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
+                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
+                labeled = true
+            end
         end
     end
     
@@ -130,10 +131,12 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     
     ## Plot obstacles
     labeled = false
-    for ((x_obs, y_obs), (t0_obs, tf_obs), val_obs) in mdp.obstacles
-        if t0_obs == 1 && tf_obs == mdp.max_time
-            scatter!([x_obs], [y_obs], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
-            labeled = true
+    for x in 1:xmax
+        for y in 1:ymax
+            if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
+                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
+                labeled = true
+            end
         end
     end
 

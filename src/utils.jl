@@ -67,7 +67,7 @@ function test_LL()
                     p_transition = 1.0,
                     γ = 0.95,
                     current_tgt = ((5,1),(1,10),50),
-                    obstacles = [((3,1), (1,10), -5)],
+                    obstacles_grid = zeros(Float64, (20,20,10)),
                     exit_xys = [],
                     init_state = LLRoverWorld.LLState(2, 6, 1)
                     )
@@ -79,4 +79,71 @@ function test_LL()
     for (ll_s, ll_a, ll_r) in stepthrough(ll_mdp, ll_policy, ll_mdp.init_state, "s,a,r", max_steps=ll_mdp.max_time)
         println("LL: in state $ll_s, taking action $ll_a, received reward $ll_r")
     end
+end
+
+function create_rover_world(grid_size::Tuple{Int64,Int64}, 
+                            max_time::Int64; 
+                            tgts::Vector{Tuple{Tuple{Int64,Int64}, Float64}} = [((2,2), 50.0), ((9,8), 50.0)], 
+                            shadow = :true, 
+                            shadow_value = -5,
+                            permanent_obstacles::Vector{Tuple{Tuple{Int64,Int64}, Float64}} = [((10,10), -20.0)],                            
+                            exit_xys=[(num_rows, num_cols)],
+                            include_measurement = true,
+                            measure_reward = 2.0
+                            )
+    if shadow == :true
+        obstacles_grid = create_grid_obstacles_shadow(grid_size[1], grid_size[2], max_time; exit_xys=exit_xys)
+    else
+        obstacles_grid = fill(false,(grid_size[1],grid_size[2],max_time))
+    end
+    obstacles_grid = obstacles_grid .* shadow_value
+    for ((x,y),v) in permanent_obstacles
+        obstacles_grid[x, y, :] .= v
+    end
+    tgts_dict = Dict()
+    for (i, ((x,y),v)) in enumerate(tgts)
+        shadow_time = findfirst(val!=0 for val in obstacles_grid[x,y,:])
+        if shadow_time == nothing
+            shadow_time = max_time+1
+        end
+        tgts_dict[i] = ((x,y),(1,shadow_time-1),v)
+    end
+    rgw = RoverWorld.RoverWorldMDP(
+        grid_size = grid_size,
+        max_time = max_time,
+        tgts = tgts_dict,
+        obstacles_grid = obstacles_grid,
+        exit_xys = exit_xys,
+        include_measurement = include_measurement,
+        measure_reward = measure_reward
+    )
+    RoverWorld.test_state_indexing(rgw)
+    return rgw
+end
+
+function create_grid_obstacles_shadow(num_rows, num_cols, max_time; start_from::Symbol=:bottom_right, exit_xys=[(num_rows, num_cols)])
+    num_rows != num_cols && error("Not implemented. Currently, num_rows must equal num_cols")
+    obstacles_grid = fill(false,(num_rows,num_cols,max_time))
+    shadow_end_time = max_time
+    # Shadow progresses one row/col at a time
+    shadow_start_time = max_time - num_rows + 1
+    for i in 1:num_rows
+        if start_from == :bottom_right
+            x_range = num_rows-i+1 : num_rows
+            y_range = 1:i
+        else
+            error("Not implemented for direction $start_from")
+        end
+        cur_time = shadow_start_time + i - 1
+        t_range = cur_time:shadow_end_time
+        for (x,y,t) in Iterators.product(x_range, y_range,t_range)
+            obstacles_grid[x, y, t] = true
+        end
+    end
+    # Exception for exit xys
+    for (x,y) in exit_xys
+        obstacles_grid[x, y, :] .= false
+    end
+    
+    return obstacles_grid
 end

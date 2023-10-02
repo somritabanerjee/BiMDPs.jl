@@ -21,9 +21,7 @@ end
 	p_transition::Real = 1.0 # probability of transitioning to the correct next state
     γ::Float64 = 0.95
 	current_tgt::Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Float64} = ((10,18),(1,max_time),50) # ((x,y), (t0,tf), reward)
-	obstacles::Vector{Tuple{Tuple{Int, Int}, Tuple{Int, Int}, Float64}} = [((6,6), (1,100), -1),
-																((1,1), (1,100), -1)
-																] # list of ((x,y), (t0,tf), penalty) for each obstacle
+	obstacles_grid::Array{Float64,3} = zeros(Float64, (grid_size[1], grid_size[2], max_time)) # grid of obstacles
 	exit_xys::Vector{Tuple{Int,Int}} = [(18, 3)] # if the rover is at any of these xys, the episode terminates
 	init_state::LLState = LLState(1, 1, 1)
 	include_measurement::Bool = false
@@ -44,7 +42,11 @@ include("simulation.jl")
 function print_details(mdp::LLRoverWorldMDP)
 	println("========== LLRoverWorldMDP ==========")
 	for f in fieldnames(typeof(mdp))
-		println("$f: $(getfield(mdp, Symbol(f)))")
+		if f == :obstacles_grid
+			println("$f: omitting.")
+		else
+			println("$f: $(getfield(mdp, Symbol(f)))")
+		end
 	end
 	println("=====================================")
 end
