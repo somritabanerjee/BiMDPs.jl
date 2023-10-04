@@ -267,16 +267,21 @@ end
 
 function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_compute")
     fig = plot()
-    for (solver_name, (comp_times, mean_rewards, stddev_rewards)) in results
+    ordering = "bl_vi", "vi", "qlearning", "sarsa"
+    for (i, solver_name) in enumerate(ordering)
+        !(solver_name in keys(results)) && continue
+        (comp_times, mean_rewards, stddev_rewards) = results[solver_name]
         errors = log.(stddev_rewards ./ 3)
         errors = [e>0 ? e : 0.0 for e in errors]
-        plot!(comp_times, mean_rewards, ribbon=errors, fillalpha = 0.2, label=solver_name)
+        lbl = (solver_name == "bl_vi") ? "bl_vi (ours)" : solver_name
+        plot!(comp_times, mean_rewards, ribbon=errors, fillalpha = 0.2, label=lbl, color = i, legend = :best)
     end
-    xlabel!("computation time (s)")
-    ylabel!("mean reward")
+    xlabel!("Computation time (s)")
+    ylabel!("Mean discounted reward")
     title!("Optimality vs. Compute Time")
     !isdir(dir) && mkdir(dir) # create directory
     savefig(fig, dir*"/"*fname)
+    savefig(fig, dir*"/"*fname*".pdf")
     return fig
 end
 

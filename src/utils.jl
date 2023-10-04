@@ -5,8 +5,10 @@ using Statistics
 using DiscreteValueIteration
 using TabularTDLearning
 using Random
+using Dates
+using JLD2
 
-function optimality_vs_compute(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRoverWorldMDP}, solvers_iters_Nsim::Vector{Tuple{String,Vector{Int},Int}}; verbose = false)
+function optimality_vs_compute(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRoverWorldMDP}, solvers_iters_Nsim::Vector{Tuple{String,Vector{Int},Int}}; verbose = false, dir="temp")
     results = Dict{String, Tuple{Vector{Float64}, Vector{Float64}, Vector{Float64}}}() # dictionary mapping solver_name to (comp_time, mean_reward, stddev_reward)
     for (solver_name, max_iters_vec, N_sim) in solvers_iters_Nsim
         comp_times = Vector{Float64}(undef, length(max_iters_vec))
@@ -55,6 +57,8 @@ function optimality_vs_compute(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.
         end
         results[solver_name] = (comp_times, mean_rewards, stddev_rewards)
     end
+    fname = dir*"/"*"data-"*Dates.format(now(),"yyyy-mm-dd_HH_MM")*".jld2"
+    save(fname, "data", results)
     return results
 end
 
