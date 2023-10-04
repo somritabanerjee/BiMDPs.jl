@@ -16,7 +16,8 @@ function plot_grid_world(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRover
     outline_state::Union{RoverWorld.State, MRoverWorld.MState, Nothing}=nothing,
     timestep=nothing,
     cum_reward=nothing,
-    fig_title="Grid World Policy Plot")
+    fig_title="Grid World Policy Plot",
+    augment_title=true)
 
     gr()
 
@@ -69,7 +70,6 @@ function plot_grid_world(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRover
         Uxy_slice = Uxy[:,:,t,measured_idx,visited_idx]
     end
 
-
     # plot values (i.e the U matrix)
     max_val = maximum(abs, Uxy)
     fig = heatmap(Uxy_slice',
@@ -78,7 +78,11 @@ function plot_grid_world(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRover
                 framestyle=:box,
                 tickdirection=:out,
                 color=cmap.colors,
-                clims=(-max_val, max_val))
+                clims=(-max_val, max_val),
+                grid = false,
+                minorgrid = true,
+                minorticks = 2,
+                minorgridalpha = 1.0)
     xlims!(0.5, xmax+0.5)
     ylims!(0.5, ymax+0.5)
     xticks!(1:xmax)
@@ -116,12 +120,13 @@ function plot_grid_world(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRover
         plot!(rect, fillalpha=0, linecolor=color)
     end
 
-    fig_title = fig_title * 
-                    (isnan(discount)            ? "" : " (iter=$iter, γ=$discount)") * 
-                    (isnothing(outline_state)   ? "" : " (t=$t)") * 
-                    (isnothing(timestep)        ? "" : " (t=$t)") *
-                    (isnothing(cum_reward)      ? "" : " (reward=$cum_reward)")
-
+    if augment_title
+        fig_title = fig_title * 
+                        (isnan(discount)            ? "" : " (iter=$iter, γ=$discount)") * 
+                        (isnothing(outline_state)   ? "" : " (t=$t)") * 
+                        (isnothing(timestep)        ? "" : " (t=$t)") *
+                        (isnothing(cum_reward)      ? "" : " (reward=$cum_reward)")
+    end
 
     title!(fig_title)
 
@@ -193,6 +198,36 @@ function create_reward_field_evolution_gif(mdp; dir="", fname = "reward_evolutio
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
 	!isdir(dir) && mkdir(dir) # create directory
 	write(dir*"/"*fname*".gif", sim_frames)
+end
+
+function create_reward_field_evolution_imgs(mdp; dir="", subdir = "reward_evolution")
+    if mdp isa RoverWorld.RoverWorldMDP
+        get_rewards = RoverWorld.get_rewards
+    elseif mdp isa MRoverWorld.MRoverWorldMDP
+        get_rewards = MRoverWorld.get_rewards
+    end       
+    U = get_rewards(mdp, RoverWorld.NothingPolicy())
+    !isdir(dir) && mkdir(dir) # create directory
+    !isdir(dir*"/"*subdir) && mkdir(dir*"/"*subdir) # create subdirectory
+    start = 1
+    for i in 1:1:mdp.max_time
+        if (i<mdp.max_time) && (U[:,:,i,1] == U[:,:,i+1,1])
+            continue
+        end
+        if start == i
+            title = "t = $i"
+        else
+            title = "t = $start to $i"
+        end
+        println("Creating figure for $title")
+        fname = "Reward Field at $title"
+        fig = plot_grid_world(mdp, RoverWorld.NothingPolicy();
+			timestep = i, outline=false, 
+            show_rewards = true, fig_title=fname, augment_title=false)
+        savefig(fig, dir*"/"*subdir*"/"*fname)
+        savefig(fig, dir*"/"*subdir*"/"*fname*".pdf")
+        start = i+1
+    end
 end
 
 using RollingFunctions
