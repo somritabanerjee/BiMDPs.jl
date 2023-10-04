@@ -284,8 +284,8 @@ end
 function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP, 
                                         sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}; 
                                         dir="", 
-                                        fname = "bilevel_episode", 
-                                        fig_title="Bi-level Simulated Episode")
+                                        fname = "bilevel_mdp_episode", 
+                                        fig_title="Bi-level MDP Episode")
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
@@ -362,14 +362,15 @@ function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     # end
     title!(fig_title)
     savefig(fig, joinpath(dir, fname))
+    savefig(fig, joinpath(dir, fname*".pdf"))
     return fig
 end
 
 function plot_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP, 
                                         sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}}; 
                                         dir="", 
-                                        fname = "bilevel_episode", 
-                                        fig_title="Bi-level Simulated Episode")
+                                        fname = "bilevel_mdp_episode", 
+                                        fig_title="Bi-level MDP Episode")
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
@@ -431,14 +432,15 @@ function plot_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
     
     title!(fig_title)
     savefig(fig, joinpath(dir, fname))
+    savefig(fig, joinpath(dir, fname*".pdf"))
     return fig
 end
 
 function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP, 
                                             sar_history::Vector{Tuple{RoverWorld.State, RoverWorld.Action, Float64}}; 
                                             dir="", 
-                                            fname = "finegrained_episode", 
-                                            fig_title="Fine-grained Simulated Episode")
+                                            fname = "flat_mdp_episode", 
+                                            fig_title="Flat MDP Episode")
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
@@ -496,14 +498,15 @@ function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP,
     title!(fig_title)
     !isdir(dir) && mkdir(dir) # create directory
     savefig(fig, joinpath(dir, fname))
+    savefig(fig, joinpath(dir, fname*".pdf"))
     return fig
 end
 
 function plot_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP, 
                                             sar_history::Vector{Tuple{MRoverWorld.MState, MRoverWorld.MAction, Float64}}; 
                                             dir="", 
-                                            fname = "finegrained_episode", 
-                                            fig_title="Fine-grained Simulated Episode")
+                                            fname = "flat_mdp_episode", 
+                                            fig_title="Flat MDP Episode")
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
@@ -561,6 +564,7 @@ function plot_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
     title!(fig_title)
     !isdir(dir) && mkdir(dir) # create directory
     savefig(fig, joinpath(dir, fname))
+    savefig(fig, joinpath(dir, fname*".pdf"))
     return fig
 end
 
