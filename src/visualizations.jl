@@ -211,7 +211,9 @@ function create_reward_field_evolution_imgs(mdp; dir="", subdir = "reward_evolut
     !isdir(dir*"/"*subdir) && mkdir(dir*"/"*subdir) # create subdirectory
     start = 1
     for i in 1:1:mdp.max_time
-        if (i<mdp.max_time) && (U[:,:,i,1] == U[:,:,i+1,1])
+        slice_i = (mdp isa RoverWorld.RoverWorldMDP) ? U[:,:,i,1] : U[:,:,i,1,1]
+        slice_ip = (i==mdp.max_time) ? nothing : ((mdp isa RoverWorld.RoverWorldMDP) ? U[:,:,i+1,1] : U[:,:,i+1,1,1])
+        if (i<mdp.max_time) && (slice_i == slice_ip)
             continue
         end
         if start == i
@@ -279,6 +281,7 @@ function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_comput
     xlabel!("Computation time (s)")
     ylabel!("Mean discounted reward")
     title!("Optimality vs. Compute Time")
+    # xlims!((0,200))
     !isdir(dir) && mkdir(dir) # create directory
     savefig(fig, dir*"/"*fname)
     savefig(fig, dir*"/"*fname*".pdf")

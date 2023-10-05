@@ -14,7 +14,7 @@ function POMDPs.reward(mdp::MRoverWorldMDP, s::MState, a::MAction)
     end
     if a == MEASURE && !is_tgt && !is_obstacle
         for (tgt_id, ((x, y), (t0,tf), val)) in mdp.tgts
-            if 0.0 < euclidean_distance((s.x, s.y), (x, y)) < 2.0
+            if 0.0 < euclidean_distance((s.x, s.y), (x, y)) < 2.0 && !s.measured[tgt_id]
                 r += mdp.measure_reward
             end
         end

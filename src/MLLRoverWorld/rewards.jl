@@ -11,7 +11,7 @@ function POMDPs.reward(mdp::MLLRoverWorldMDP, s::MLLState, a::MLLAction)
         r += mdp.obstacles_grid[s.x, s.y, s.t]
         is_obstacle = true
     end
-    if a == MEASURE && !is_tgt && !is_obstacle && 0.0 < euclidean_distance((s.x, s.y), (x, y)) < 2.0
+    if a == MEASURE && !is_tgt && !is_obstacle && 0.0 < euclidean_distance((s.x, s.y), (x, y)) < 2.0 && !s.measured
         r += mdp.measure_reward
     end
     return r

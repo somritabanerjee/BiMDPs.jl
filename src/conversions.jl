@@ -1,15 +1,20 @@
 using DiscreteValueIteration
 
-function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing)
+function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing, hl_mdp = nothing, hl_policy = nothing, hl_comp_time = nothing)
     verbose = false
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}()
     comp_time = 0.0
     disc_reward = 0.0
-    # Create a HL MDP
-    hl_mdp = HighLevelMDP(mdp)
-    hl_solver = ValueIterationSolver(max_iterations=max_iters)
-    hl_policy, hl_comp_time = @timed solve(hl_solver, hl_mdp)
-    verbose && println("Done solving HL MDP")
+    disc = 1.0
+    if isnothing(hl_mdp)
+        # Create a HL MDP
+        hl_mdp = HighLevelMDP(mdp)
+        hl_solver = ValueIterationSolver(max_iterations=max_iters)
+        hl_policy, hl_comp_time = @timed solve(hl_solver, hl_mdp)
+        verbose && println("Done solving HL MDP")
+    else 
+        verbose && println("Using provided HL MDP")
+    end
     comp_time += hl_comp_time
     if isnothing(init_state)
         rng = Random.default_rng()
@@ -36,7 +41,8 @@ function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64
         comp_time += ll_comp_time
         for (ll_s, ll_a, ll_r) in stepthrough(ll_mdp, ll_policy, ll_mdp.init_state, "s,a,r", max_steps=ll_mdp.max_time)
             push!(sar_history, (ll_s, ll_a, ll_r))
-            disc_reward = ll_r + mdp.γ * disc_reward
+            disc *= mdp.γ
+            disc_reward += disc * ll_r
             verbose && println("    LL: in state $ll_s, taking action $ll_a with reward $ll_r")
         end
         verbose && println("Done stepthrough LL MDP")
@@ -58,6 +64,7 @@ function solve_using_bilevel_mdp(mdp::MRoverWorld.MRoverWorldMDP; max_iters::Int
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}}()
     comp_time = 0.0
     disc_reward = 0.0
+    disc = 1.0
     # Create a HL MDP
     hl_mdp = HighLevelMDP(mdp)
     hl_solver = ValueIterationSolver(max_iterations=max_iters)
@@ -90,7 +97,8 @@ function solve_using_bilevel_mdp(mdp::MRoverWorld.MRoverWorldMDP; max_iters::Int
         comp_time += ll_comp_time
         for (ll_s, ll_a, ll_r) in stepthrough(ll_mdp, ll_policy, ll_mdp.init_state, "s,a,r", max_steps=ll_mdp.max_time)
             push!(sar_history, (ll_s, ll_a, ll_r))
-            disc_reward = ll_r + mdp.γ * disc_reward
+            disc *= mdp.γ
+            disc_reward += disc * ll_r
             verbose && println("    LL: in state $ll_s, taking action $ll_a with reward $ll_r")
         end
         verbose && println("Done stepthrough LL MDP")
@@ -114,7 +122,7 @@ function solve_using_finegrained_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::I
     policy, comp_time = @timed solve(solver, mdp)
     hr = HistoryRecorder()
     if isnothing(init_state)
-        rng = Random.seed!(1)
+        rng = Random.default_rng()
         init_state = RoverWorld.rand_starting_state(rng, mdp)
     end
     history = simulate(hr, mdp, policy, init_state)
@@ -130,7 +138,7 @@ function solve_using_finegrained_mdp(mdp::MRoverWorld.MRoverWorldMDP; max_iters:
     policy, comp_time = @timed solve(solver, mdp)
     hr = HistoryRecorder()
     if isnothing(init_state)
-        rng = Random.seed!(1)
+        rng = Random.default_rng()
         init_state = MRoverWorld.rand_starting_state(rng, mdp)
     end
     history = simulate(hr, mdp, policy, init_state)
@@ -155,15 +163,25 @@ end
 
 function HLState_from_MLLState(ll_s::MLLRoverWorld.MLLState, prev_hl_s::HLRoverWorld.HLState, prev_hl_a::HLRoverWorld.HLAction, hl_mdp::HLRoverWorld.HLRoverWorldMDP)
     new_visited = copy(prev_hl_s.visited)
-    tgt_attempted = hl_mdp.tgts[prev_hl_a.tgt]
-    ((tgt_x, tgt_y), (tgt_t0, tgt_tf), val) = tgt_attempted
-    if ll_s.x == tgt_x && ll_s.y == tgt_y && (tgt_t0 <= ll_s.t <= tgt_tf) && ll_s.measured
-        # Visited a target
-        new_visited[prev_hl_a.tgt] = true
-        return HLRoverWorld.HLState(ll_s.x, ll_s.y, ll_s.t, new_visited)
-    else
-        # Hit a terminal state
-        return nothing
+    attempt = prev_hl_a.tgt > 0 ? :tgt : :exit
+    if attempt == :tgt
+        tgt_attempted = hl_mdp.tgts[prev_hl_a.tgt]
+        ((tgt_x, tgt_y), (tgt_t0, tgt_tf), val) = tgt_attempted
+        if ll_s.x == tgt_x && ll_s.y == tgt_y && (tgt_t0 <= ll_s.t <= tgt_tf) && ll_s.measured
+            # Visited a target
+            new_visited[prev_hl_a.tgt] = true
+            return HLRoverWorld.HLState(ll_s.x, ll_s.y, ll_s.t, new_visited)
+        else
+            # Hit a terminal state
+            return nothing
+        end
+    elseif attempt == :exit
+        if ll_s.x == hl_mdp.exit_xys[-prev_hl_a.tgt][1] && ll_s.y == hl_mdp.exit_xys[-prev_hl_a.tgt][2]
+            return HLRoverWorld.HLState(ll_s.x, ll_s.y, ll_s.t, new_visited)
+        else
+            # Hit a terminal state
+            return nothing
+        end
     end
 end
 
@@ -201,7 +219,7 @@ function MLowLevelMDP(mdp::MRoverWorld.MRoverWorldMDP, hl_s::HLRoverWorld.HLStat
                             null_xy = mdp.null_xy,
                             p_transition = mdp.p_transition,
                             γ = mdp.γ,
-                            current_tgt = mdp.tgts[hl_a.tgt],
+                            current_tgt = hl_a.tgt > 0 ? mdp.tgts[hl_a.tgt] : (mdp.exit_xys[-hl_a.tgt], (1, mdp.max_time), 0.0),
                             obstacles_grid = mdp.obstacles_grid,
                             exit_xys = mdp.exit_xys,
                             measure_reward = mdp.measure_reward,
