@@ -288,6 +288,36 @@ function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_comput
     return fig
 end
 
+function plot_optimality_compute_vs_gridsize(results; dir="varygrid", fname="vary_gridsize")
+    fig = plot()
+    ordering = "bl_vi", "vi"
+    num_grid_sizes = length(results[ordering[1]][1])
+    grid_sizes = ["10x10\n5 tgts", "20x20\n10tgts", "30x30\n15tgts", "40x40\n15tgts", "50x50\n15tgts"]
+    p = twinx()
+    max_reward = 0
+    max_time = 0
+    for (i, solver_name) in enumerate(ordering)
+        !(solver_name in keys(results)) && continue
+        (comp_times, mean_rewards, stddev_rewards) = results[solver_name]
+        errors = log.(stddev_rewards ./ 3)
+        errors = [e>0 ? e : 0.0 for e in errors]
+        lbl = (solver_name == "bl_vi") ? "bl_vi (ours)" : solver_name
+        plot!(1:length(mean_rewards), mean_rewards, ribbon=errors, fillalpha = 0.2, label=lbl, color = i, legend = :left, ylabel = "Mean discounted reward", grid = :off)
+        plot!(p, 1:length(mean_rewards), comp_times, linestyle=:dash, label=lbl, color = i, legend = :right, ylabel = "Computation time (s)", box=:on)
+        max_reward = (maximum(mean_rewards) > max_reward) ? maximum(mean_rewards) : max_reward
+        max_time = (maximum(comp_times) > max_time) ? maximum(comp_times) : max_time
+    end
+    xlabel!("Problem complexity")
+    xticks!((1:num_grid_sizes), grid_sizes[1:num_grid_sizes])
+    ylims!((0, max_reward))
+    ylims!(p, (0, max_time))
+    title!("Rewards and Computation Time vs. Problem Complexity")
+    !isdir(dir) && mkdir(dir) # create directory
+    savefig(fig, dir*"/"*fname)
+    savefig(fig, dir*"/"*fname*".pdf")
+    return fig
+end
+
 
 function plot_bilevel_simulated_episode(mdp::RoverWorld.RoverWorldMDP, 
                                         sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}; 

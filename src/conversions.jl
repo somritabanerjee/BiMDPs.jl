@@ -1,7 +1,6 @@
 using DiscreteValueIteration
 
-function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing, hl_mdp = nothing, hl_policy = nothing, hl_comp_time = nothing)
-    verbose = false
+function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing, hl_mdp = nothing, hl_policy = nothing, hl_comp_time = nothing, verbose = false)
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}()
     comp_time = 0.0
     disc_reward = 0.0
@@ -59,8 +58,7 @@ function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64
     return comp_time, disc_reward, sar_history
 end
 
-function solve_using_bilevel_mdp(mdp::MRoverWorld.MRoverWorldMDP; max_iters::Int64=100, init_state::Union{MRoverWorld.MState, Nothing} = nothing)
-    verbose = false
+function solve_using_bilevel_mdp(mdp::MRoverWorld.MRoverWorldMDP; max_iters::Int64=100, init_state::Union{MRoverWorld.MState, Nothing} = nothing, verbose = false)
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}}()
     comp_time = 0.0
     disc_reward = 0.0

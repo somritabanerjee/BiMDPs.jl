@@ -146,6 +146,25 @@ case_dictionary = Dict("case009" => create_rover_world((10,10),
                                             permanent_obstacles=[((5,5), -20.0), ((5,6), -20.0), ((6,5), -20.0), ((6,6), -20.0)],
                                             exit_xys = [(10,10)],
                                             force_measurement = true
+                        ),
+                        "case012" => create_rover_world((10,10), 
+                                            25, 
+                                            tgts=[((9,2), 50.0), ((9,8), 50.0), ((10,10), 5.0)], 
+                                            shadow=:true,
+                                            shadow_value=-5,
+                                            permanent_obstacles=[((5,5), -20.0), ((5,6), -20.0), ((6,5), -20.0), ((6,6), -20.0)],
+                                            exit_xys = [(10,10)],
+                                            force_measurement = true
+                        ),
+                        "case013" => create_rover_world((30,30), 
+                                            60, 
+                                            tgts=[((9,2), 50.0), ((9,8), 50.0), ((10,10), 5.0)], 
+                                            shadow=:true,
+                                            shadow_value=-5,
+                                            permanent_obstacles=[((5,5), -20.0), ((5,6), -20.0), ((6,5), -20.0), ((6,6), -20.0)],
+                                            exit_xys = [(10,10)],
+                                            include_measurement = false,
+                                            measure_reward = 0.0
                         )
 );
 export case_dictionary  

@@ -173,3 +173,75 @@ end
 function euclidean_distance(p1::Tuple{Int,Int}, p2::Tuple{Int,Int})
     return sqrt((p1[1] - p2[1])^2 + (p1[2] - p2[2])^2)
 end
+
+# test with vary_grid_size(verbose=true, N_sim=1, dir=dir)
+function vary_grid_size(;verbose = false, N_sim = 10, dir="temp")
+    # grid_sizes = [(10,10)]
+    # grid_sizes = [(10,10), (11,11), (13,13)]
+    grid_sizes = [(10,10), (20,20), (30,30), (40,40), (50,50)]
+    blvi_comp_times = zeros(length(grid_sizes))
+    blvi_mean_rewards = zeros(length(grid_sizes))
+    blvi_std_rewards = zeros(length(grid_sizes))
+    vi_comp_times = zeros(length(grid_sizes))
+    vi_mean_rewards = zeros(length(grid_sizes))
+    vi_std_rewards = zeros(length(grid_sizes))
+    max_iterations_blvi = 5000000
+    max_iterations_vi   = 50000
+    for (i,gs) in enumerate(grid_sizes)
+        horizon = gs[1] + gs[2]
+        rgw = create_rover_world(gs, 
+                            horizon, 
+                            tgts=[((9,2), 50.0), ((9,8), 50.0), ((10,10), 5.0)], 
+                            shadow=:true,
+                            shadow_value=-5,
+                            permanent_obstacles=[((5,5), -20.0), ((5,6), -20.0), ((6,5), -20.0), ((6,6), -20.0)],
+                            exit_xys = [(10,10)],
+                            include_measurement = false,
+                            measure_reward = 0.0
+                            )
+        if N_sim == 1
+            # Init state
+            init_states = [RoverWorld.State(1, 1, 1, fill(false, length(rgw.tgts)))]
+        else
+            rng = Random.default_rng()
+            init_states = [RoverWorld.rand_starting_state(rng, rgw) for _ in 1:N_sim]
+        end
+        # Create the HL MDP once to save time
+        hl_mdp = HighLevelMDP(rgw)
+        hl_solver = ValueIterationSolver(max_iterations=max_iterations_blvi)
+        hl_policy, hl_comp_time = @timed solve(hl_solver, hl_mdp)
+        verbose && println("Done solving HL MDP in $hl_comp_time seconds")
+        # Create VI solver once to save time
+        vi_solver = ValueIterationSolver(max_iterations=max_iterations_vi)
+        vi_policy, vi_comp_time = @timed solve(vi_solver, rgw)
+        verbose && println("Done solving VI MDP in $vi_comp_time seconds")
+        rollsim = RolloutSimulator(max_steps=rgw.max_time)
+        bct = zeros(N_sim)
+        blvi_rewards = zeros(N_sim)
+        vi_rewards = zeros(N_sim)
+        for n in 1:N_sim
+            s0 = init_states[n]
+            # Solve + Simulate using BLVI
+            blvi_comp_time, blvi_discounted_reward, blvi_sar_history = solve_using_bilevel_mdp(rgw, max_iters=max_iterations_blvi, verbose=false, init_state=s0, hl_mdp=hl_mdp, hl_policy=hl_policy, hl_comp_time=hl_comp_time)
+            verbose && println("Done solving BLVI MDP in $blvi_comp_time seconds")
+            bct[n] = blvi_comp_time
+            blvi_rewards[n] = blvi_discounted_reward
+            # Simulate using VI
+            vi_reward = simulate(rollsim, rgw, vi_policy, s0)
+            vi_rewards[n] = vi_reward
+            verbose && println("BLVI reward: $blvi_discounted_reward, VI reward: $vi_reward")
+        end
+
+        # Save results
+        blvi_comp_times[i] = mean(bct)
+        vi_comp_times[i] = vi_comp_time
+        blvi_mean_rewards[i] = mean(blvi_rewards)
+        vi_mean_rewards[i] = mean(vi_rewards)
+        blvi_std_rewards[i] = std(blvi_rewards)
+        vi_std_rewards[i] = std(vi_rewards)
+    end
+    results = Dict("bl_vi" => (blvi_comp_times, blvi_mean_rewards, blvi_std_rewards), "vi" => (vi_comp_times, vi_mean_rewards, vi_std_rewards))
+    fname = dir*"/"*"varygridsize-data-"*Dates.format(now(),"yyyy-mm-dd_HH_MM")*".jld2"
+    save(fname, "data", results)
+    return results
+end
