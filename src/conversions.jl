@@ -1,4 +1,9 @@
 using DiscreteValueIteration
+using BeliefGridValueIteration
+using BasicPOMCP
+using PointBasedValueIteration
+using QMDP
+using BeliefUpdaters
 
 function solve_using_bilevel_mdp(mdp::RoverWorld.RoverWorldMDP; max_iters::Int64=100, init_state::Union{RoverWorld.State, Nothing} = nothing, hl_mdp = nothing, hl_policy = nothing, hl_comp_time = nothing, verbose = false)
     sar_history = Vector{Tuple{Union{HLRoverWorld.HLState, LLRoverWorld.LLState}, Union{HLRoverWorld.HLAction, LLRoverWorld.LLAction}, Union{Float64, Nothing}}}()
@@ -143,6 +148,59 @@ function solve_using_finegrained_mdp(mdp::MRoverWorld.MRoverWorldMDP; max_iters:
     sar_history = [(h[:s], h[:a], h[:r]) for h in history]
     disc_reward = discounted_reward(history)
     return comp_time, disc_reward, sar_history
+end
+
+function solve_using_finegrained_mdp(mdp::PRoverWorld.PRoverWorldMDP; max_iters::Int64=100, init_state::Union{PRoverWorld.PState, Nothing} = nothing)
+    sar_history = Vector{Tuple{PRoverWorld.PState, PRoverWorld.PAction, Float64}}()
+    disc_reward = 0.0
+    
+    # solver = BeliefGridValueIterationSolver(max_iterations=2, m = 2)
+    # policy, comp_time = @timed solve(solver, mdp)
+    # println("Solve time: $comp_time seconds")
+    # hr = HistoryRecorder()
+    # if isnothing(init_state)
+    #     rng = Random.default_rng()
+    #     init_state = PRoverWorld.rand_starting_state(rng, mdp)
+    # end
+    # history = simulate(hr, mdp, policy, init_state)
+    # sar_history = [(h[:s], h[:a], h[:r]) for h in history]
+    # disc_reward = discounted_reward(history)
+    # return comp_time, disc_reward, sar_history
+
+    # solver = PBVISolver(max_iterations = 2)
+    solver = QMDPSolver(max_iterations=10,
+                    belres=1e-3,
+                    verbose=true
+                   ) 
+    policy, comp_time = @timed solve(solver, mdp)
+    println("Solve time: $comp_time seconds")
+
+    # policy = FunctionPolicy(b->PRoverWorld.UP)
+    # filt = DiscreteUpdater(mdp)
+    # println("About to step")
+    # for (b,a,o,r) in stepthrough(mdp, policy, filt, "b,a,o,r", max_steps=2)
+    #     println("State was $s,")
+    #     println("action $a was taken,")
+    #     println("reward $r was received,")
+    #     # println("and observation $o was received.\n")
+    # end
+
+    # policy = RandomPolicy(mdp)
+    for (s,a,r) in stepthrough(mdp, policy, "s,a,r", max_steps = 2)
+        println("State was $s,")
+        println("action $a was taken,")
+        println("reward $r was received,")
+    end
+
+    # solver = POMCPSolver()
+    # planner, comp_time = @timed solve(solver, mdp)
+    # println("Solve time: $comp_time seconds")
+    # for (s, a, o, r) in stepthrough(mdp, planner, "s,a,o,r", max_steps=10)
+    #     println("State was $s,")
+    #     println("action $a was taken,")
+    #     println("reward $r was received,")
+    #     println("and observation $o was received.\n")
+    # end
 end
 
 function HLState_from_LLState(ll_s::LLRoverWorld.LLState, prev_hl_s::HLRoverWorld.HLState, prev_hl_a::HLRoverWorld.HLAction, hl_mdp::HLRoverWorld.HLRoverWorldMDP)

@@ -1,16 +1,19 @@
 module BiMDPs
 
-include("RoverGridWorld/RoverGridWorld.jl")
-export RoverGridWorld
+# include("old models/RoverGridWorld/RoverGridWorld.jl")
+# export RoverGridWorld
 
-include("RoverXYTWorld/RoverXYTWorld.jl")
-export RoverXYTWorld
+# include("old models/RoverXYTWorld/RoverXYTWorld.jl")
+# export RoverXYTWorld
 
 include("RoverWorld/RoverWorld.jl")
 export RoverWorld
 
 include("MRoverWorld/MRoverWorld.jl")
 export MRoverWorld
+
+include("PRoverWorld/PRoverWorld.jl")
+export PRoverWorld
 
 include("utils.jl")
 export optimality_vs_compute
@@ -165,6 +168,17 @@ case_dictionary = Dict("case009" => create_rover_world((10,10),
                                             exit_xys = [(10,10)],
                                             include_measurement = false,
                                             measure_reward = 0.0
+                        ),
+                        "case014" => create_rover_world((2,2), 
+                                            2, 
+                                            tgts=[((2,2), 50.0)], 
+                                            shadow=:false,
+                                            shadow_value=-5,
+                                            permanent_obstacles=Vector{Tuple{Tuple{Int64, Int64}, Float64}}(),
+                                            exit_xys = [(2,2)],
+                                            include_measurement = true,
+                                            measure_reward = 5.0,
+                                            pomdp = true
                         )
 );
 export case_dictionary  

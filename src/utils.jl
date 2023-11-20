@@ -94,7 +94,8 @@ function create_rover_world(grid_size::Tuple{Int64,Int64},
                             exit_xys=[(num_rows, num_cols)],
                             include_measurement = true,
                             measure_reward = 2.0,
-                            force_measurement = false
+                            force_measurement = false,
+                            pomdp = false
                             )
     if shadow == :true
         obstacles_grid = create_grid_obstacles_shadow(grid_size[1], grid_size[2], max_time; exit_xys=exit_xys)
@@ -125,17 +126,31 @@ function create_rover_world(grid_size::Tuple{Int64,Int64},
         MRoverWorld.test_state_indexing(mrgw)
         return mrgw
     else
-        rgw = RoverWorld.RoverWorldMDP(
-            grid_size = grid_size,
-            max_time = max_time,
-            tgts = tgts_dict,
-            obstacles_grid = obstacles_grid,
-            exit_xys = exit_xys,
-            include_measurement = include_measurement,
-            measure_reward = measure_reward
-        )
-        RoverWorld.test_state_indexing(rgw)
-        return rgw
+        if pomdp
+            rgw = PRoverWorld.PRoverWorldMDP(
+                grid_size = grid_size,
+                max_time = max_time,
+                tgts = tgts_dict,
+                obstacles_grid = obstacles_grid,
+                exit_xys = exit_xys,
+                include_measurement = include_measurement,
+                measure_reward = measure_reward
+            )
+            PRoverWorld.test_state_indexing(rgw)
+            return rgw
+        else
+            rgw = RoverWorld.RoverWorldMDP(
+                grid_size = grid_size,
+                max_time = max_time,
+                tgts = tgts_dict,
+                obstacles_grid = obstacles_grid,
+                exit_xys = exit_xys,
+                include_measurement = include_measurement,
+                measure_reward = measure_reward
+            )
+            RoverWorld.test_state_indexing(rgw)
+            return rgw
+        end
     end
 end
 
