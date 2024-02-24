@@ -408,30 +408,45 @@ function plot_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
                                         sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}}; 
                                         dir="", 
                                         fname = "bilevel_mdp_episode", 
-                                        fig_title="Bi-level MDP Episode")
+                                        fig_title="Bi-level MDP Episode",
+                                        dpi::Int64 = 1200)
+    fig = plot_frame_bilevel(mdp, sar_history, fig_title=fig_title, dpi=dpi)
+    savefig(fig, joinpath(dir, fname))
+    savefig(fig, joinpath(dir, fname*".pdf"))
+    return fig
+end
+
+function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP, 
+                                sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}};
+                                timestep::Int64 = -1,
+                                fig_title::String = "Title ??",
+                                dpi::Int64 = 1200)
+    if timestep == -1
+        timestep = length(sar_history)
+    end
     gr()
     (xmax, ymax) = mdp.grid_size
-    fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
+    fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true, dpi=dpi)
     
     ## Plot start point
     start_point = sar_history[1][1]
-    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label)
+    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label, dpi=dpi)
     
     ## Plot high level targets and path leading to them
     hl_num = 0; hl_locs = Vector{Int64}();
-    for tstep in 1:length(sar_history)
+    for tstep in 1:length(sar_history[1:timestep])
         (s, a, r) = sar_history[tstep]
         if s isa HLRoverWorld.HLState && tstep > 1
             hl_num += 1
             push!(hl_locs, tstep)
             color_seq = hl_num
-            scatter!([(s.x, s.y)], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $hl_num")
+            scatter!([(s.x, s.y)], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $hl_num", dpi=dpi)
             prev = hl_num == 1 ? 0 : hl_locs[hl_num-1]
             LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<tstep && s isa MLLRoverWorld.MLLState)]
             plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
                 color = color_seq,
                 marker = (llp.markershape, llp.markersize, llp.markeralpha),
-                label="")
+                label="", dpi=dpi)
         end
         if tstep == length(sar_history)
             prev = hl_num > 0 ? hl_locs[hl_num] : 0
@@ -439,16 +454,16 @@ function plot_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
             plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
                 color = defpath.color,
                 marker = (llp.markershape, llp.markersize, llp.markeralpha),
-                label="")
+                label="", dpi=dpi)
         end
     end
 
     ## Plot measurements
     labeled_measurements = false
-    for tstep in 1:length(sar_history)
+    for tstep in 1:length(sar_history[1:timestep])
         (s, a, r) = sar_history[tstep]
         if (a == MLLRoverWorld.MEASURE)
-            scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements")
+            scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements", dpi=dpi)
             labeled_measurements = true
         end
     end
@@ -458,20 +473,38 @@ function plot_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
     for x in 1:xmax
         for y in 1:ymax
             if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
-                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
+                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles", dpi=dpi)
                 labeled = true
             end
         end
     end
-    
+
     ## Plot finish point
-    finish_point = last(sar_history)[1]
-    scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label)
-    
+    if timestep == length(sar_history)
+        finish_point = last(sar_history)[1]
+        scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label, dpi=dpi)
+    end
+    plot!(legend=:topleft, dpi=dpi)
     title!(fig_title)
-    savefig(fig, joinpath(dir, fname))
-    savefig(fig, joinpath(dir, fname*".pdf"))
     return fig
+end
+
+function animate_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP, 
+                                                sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}};
+                                                dir="", 
+                                                fname = "bilevel_mdp_episode_gif", 
+                                                fig_title="Bi-level MDP Episode",
+                                                dpi::Int64 = 1200)
+	sim_frames = Frames(MIME("image/png"), fps=2)
+    frame_i = nothing
+    num_steps = length(sar_history)
+	for i in 1:num_steps
+		frame_i = plot_frame_bilevel(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi)
+		push!(sim_frames, frame_i)
+	end
+    [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
+	!isdir(dir) && mkdir(dir) # create directory
+	write(dir*"/"*fname*".gif", sim_frames)
 end
 
 function plot_finegrained_simulated_episode(mdp::RoverWorld.RoverWorldMDP, 
@@ -545,36 +578,50 @@ function plot_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
                                             dir="", 
                                             fname = "flat_mdp_episode", 
                                             fig_title="Flat MDP Episode")
+    fig = plot_frame_finegrained(mdp, sar_history, fig_title=fig_title)
+    !isdir(dir) && mkdir(dir) # create directory
+    savefig(fig, joinpath(dir, fname))
+    savefig(fig, joinpath(dir, fname*".pdf"))
+    return fig
+end
+
+function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP, 
+                                sar_history::Vector{Tuple{MRoverWorld.MState, MRoverWorld.MAction, Float64}};
+                                timestep::Int64 = -1,
+                                fig_title::String = "Title ??",
+                                dpi::Int64 = 1200)
+    if timestep == -1
+        timestep = length(sar_history)
+    end
     gr()
     (xmax, ymax) = mdp.grid_size
-    fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true)
-    
+    fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true, dpi=dpi)
     ## Plot start point
     start_point = sar_history[1][1]
-    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label)
+    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label, dpi=dpi)
     
     ## Plot path
-    plot!([s.x for (i, (s, a, r)) in enumerate(sar_history)], [s.y for (i, (s, a, r)) in enumerate(sar_history)], 
+    plot!([s.x for (i, (s, a, r)) in enumerate(sar_history[1:timestep])], [s.y for (i, (s, a, r)) in enumerate(sar_history[1:timestep])], 
             color = defpath.color, 
             marker=(defpath.markershape, defpath.markersize, defpath.markeralpha, defpath.color), 
-            label="Path")
+            label="Path", dpi=dpi)
 
     ## Plot target rewards + measurement rewards
     labeled_tgts = false
     labeled_measurements = false
-    for tstep in 1:length(sar_history)
+    for tstep in 1:length(sar_history[1:timestep])
         (s, a, r) = sar_history[tstep]
         if r > 0
             found = false
             if a == MRoverWorld.MEASURE
-                scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements")
+                scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements", dpi=dpi)
                 found = true
                 labeled_measurements = true
             end
             if !found
                 for (tgt_id, ((x, y), (t0,tf), val)) in mdp.tgts
                     if (s.x, s.y) == (x, y) && t0 <= s.t <= tf
-                        scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled_tgts ? "" : "Rewards")
+                        scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled_tgts ? "" : "Rewards", dpi=dpi)
                         labeled_tgts = true
                         found = true
                         break
@@ -589,21 +636,38 @@ function plot_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
     for x in 1:xmax
         for y in 1:ymax
             if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
-                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles")
+                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles", dpi=dpi)
                 labeled = true
             end
         end
     end
 
     ## Plot finish point
-    finish_point = last(sar_history)[1]
-    scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label)
-    plot!(legend=:best)
+    if timestep == length(sar_history)
+        finish_point = last(sar_history)[1]
+        scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label, dpi=dpi)
+    end
+    plot!(legend=:topleft, dpi=dpi)
     title!(fig_title)
-    !isdir(dir) && mkdir(dir) # create directory
-    savefig(fig, joinpath(dir, fname))
-    savefig(fig, joinpath(dir, fname*".pdf"))
     return fig
+end
+
+function animate_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP, 
+                                                sar_history::Vector{Tuple{MRoverWorld.MState, MRoverWorld.MAction, Float64}}; 
+                                                dir="", 
+                                                fname = "flat_mdp_episode_gif", 
+                                                fig_title="Flat MDP Episode",
+                                                dpi::Int64 = 1200)
+	sim_frames = Frames(MIME("image/png"), fps=2)
+    frame_i = nothing
+    num_steps = length(sar_history)
+	for i in 1:num_steps
+		frame_i = plot_frame_finegrained(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi)
+		push!(sim_frames, frame_i)
+	end
+    [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
+	!isdir(dir) && mkdir(dir) # create directory
+	write(dir*"/"*fname*".gif", sim_frames)
 end
 
 struct PlotElement
