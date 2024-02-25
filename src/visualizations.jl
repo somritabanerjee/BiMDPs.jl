@@ -421,9 +421,12 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
                                 timestep::Int64 = -1,
                                 fig_title::String = "Title ??",
                                 dpi::Int64 = 1200)
+    total_time = sar_history[end][1].t
     if timestep == -1
-        timestep = length(sar_history)
+        timestep = total_time
     end
+    # Limit sar_history to timestep
+    sar_history_trim = [(s, a, r) for (s, a, r) in sar_history if s.t <= timestep]
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true, dpi=dpi)
@@ -432,36 +435,65 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
     start_point = sar_history[1][1]
     scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label, dpi=dpi)
     
-    ## Plot high level targets and path leading to them
-    hl_num = 0; hl_locs = Vector{Int64}();
-    for tstep in 1:length(sar_history[1:timestep])
-        (s, a, r) = sar_history[tstep]
-        if s isa HLRoverWorld.HLState && tstep > 1
-            hl_num += 1
-            push!(hl_locs, tstep)
-            color_seq = hl_num
-            scatter!([(s.x, s.y)], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $hl_num", dpi=dpi)
-            prev = hl_num == 1 ? 0 : hl_locs[hl_num-1]
-            LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<tstep && s isa MLLRoverWorld.MLLState)]
-            plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
-                color = color_seq,
-                marker = (llp.markershape, llp.markersize, llp.markeralpha),
-                label="", dpi=dpi)
+    if timestep == total_time
+        # Do the plotting efficiently
+        ## Plot high level targets and path leading to them
+        hl_num = 0; hl_locs = Vector{Int64}();
+        for tstep in 1:length(sar_history)
+            (s, a, r) = sar_history[tstep]
+            if s isa HLRoverWorld.HLState && tstep > 1
+                hl_num += 1
+                push!(hl_locs, tstep)
+                color_seq = hl_num
+                scatter!([(s.x, s.y)], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $hl_num", dpi=dpi)
+                prev = hl_num == 1 ? 0 : hl_locs[hl_num-1]
+                LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<tstep && s isa MLLRoverWorld.MLLState)]
+                plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
+                    color = color_seq,
+                    marker = (llp.markershape, llp.markersize, llp.markeralpha),
+                    label="", dpi=dpi)
+            end
+            if tstep == length(sar_history)
+                prev = hl_num > 0 ? hl_locs[hl_num] : 0
+                LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<=tstep && s isa MLLRoverWorld.MLLState)]
+                plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
+                    color = defpath.color,
+                    marker = (llp.markershape, llp.markersize, llp.markeralpha),
+                    label="", dpi=dpi)
+            end
         end
-        if tstep == length(sar_history)
-            prev = hl_num > 0 ? hl_locs[hl_num] : 0
-            LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<=tstep && s isa MLLRoverWorld.MLLState)]
-            plot!([s.x for (j, (s, a, r)) in LL_history], [s.y for (j, (s, a, r)) in LL_history], 
-                color = defpath.color,
-                marker = (llp.markershape, llp.markersize, llp.markeralpha),
-                label="", dpi=dpi)
+    else
+        num_hl = 0; ind_complete = 0;
+        for (ind,(s,a,r)) in enumerate(sar_history_trim)
+            if s isa HLRoverWorld.HLState
+                num_hl += 1
+                if num_hl<=2 # to prevent counting end as an hl tgt
+                    # plot hl tgt with scatter
+                    tgt_location = mdp.tgts[a.tgt][1]
+                    scatter!([(tgt_location[1], tgt_location[2])], color=num_hl, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $num_hl", dpi=dpi)
+                end
+                if num_hl > 1
+                    # plot path from previous hl tgt to this hl tgt
+                    LL_subset = sar_history_trim[ind_complete+1:ind]
+                    plot!([s.x for (s,a,r) in LL_subset], [s.y for (s,a,r) in LL_subset], 
+                    color = num_hl-1,
+                    marker = (llp.markershape, llp.markersize, llp.markeralpha),
+                    label="", dpi=dpi)
+                end
+                ind_complete = ind
+            end
         end
+        # plot path from last hl tgt to end
+        LL_subset = sar_history_trim[ind_complete+1:end]
+        plot!([s.x for (s,a,r) in LL_subset], [s.y for (s,a,r) in LL_subset],
+            color = (num_hl<=2) ? num_hl : defpath.color,
+            marker = (llp.markershape, llp.markersize, llp.markeralpha),
+            label="", dpi=dpi)
     end
 
     ## Plot measurements
     labeled_measurements = false
-    for tstep in 1:length(sar_history[1:timestep])
-        (s, a, r) = sar_history[tstep]
+    for (s,a,r) in sar_history_trim
         if (a == MLLRoverWorld.MEASURE)
             scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements", dpi=dpi)
             labeled_measurements = true
@@ -480,7 +512,7 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
     end
 
     ## Plot finish point
-    if timestep == length(sar_history)
+    if timestep == total_time
         finish_point = last(sar_history)[1]
         scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label, dpi=dpi)
     end
@@ -497,8 +529,8 @@ function animate_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
                                                 dpi::Int64 = 1200)
 	sim_frames = Frames(MIME("image/png"), fps=2)
     frame_i = nothing
-    num_steps = length(sar_history)
-	for i in 1:num_steps
+    total_time = sar_history[end][1].t
+	for i in 1:total_time
 		frame_i = plot_frame_bilevel(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi)
 		push!(sim_frames, frame_i)
 	end
