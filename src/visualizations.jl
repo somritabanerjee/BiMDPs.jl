@@ -17,7 +17,8 @@ function plot_grid_world(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRover
     timestep=nothing,
     cum_reward=nothing,
     fig_title="Grid World Policy Plot",
-    augment_title=true)
+    augment_title=true,
+    dpi = 1200)
 
     gr()
 
@@ -82,7 +83,8 @@ function plot_grid_world(mdp::Union{RoverWorld.RoverWorldMDP, MRoverWorld.MRover
                 grid = false,
                 minorgrid = true,
                 minorticks = 2,
-                minorgridalpha = 1.0)
+                minorgridalpha = 1.0,
+                dpi=dpi)
     xlims!(0.5, xmax+0.5)
     ylims!(0.5, ymax+0.5)
     xticks!(1:xmax)
@@ -186,13 +188,13 @@ function create_simulated_episode_gif(mdp, policy, steps; dir="", fname = "gridw
 	write(dir*"/"*fname*".gif", sim_frames)
 end
 
-function create_reward_field_evolution_gif(mdp; dir="", fname = "reward_evolution")
+function create_reward_field_evolution_gif(mdp; dir="", fname = "reward_evolution", dpi=1200)
 	sim_frames = Frames(MIME("image/png"), fps=2)
     frame_i = nothing
 	for i in 1:1:mdp.max_time
 		frame_i = plot_grid_world(mdp, RoverWorld.NothingPolicy();
 			timestep = i, outline=false, 
-            show_rewards = true, fig_title="Reward Field Evolution")
+            show_rewards = true, fig_title="Reward Field Evolution", dpi=dpi)
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
@@ -420,7 +422,8 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
                                 sar_history::Vector{Tuple{Union{HLRoverWorld.HLState, MLLRoverWorld.MLLState}, Union{HLRoverWorld.HLAction, MLLRoverWorld.MLLAction}, Union{Float64, Nothing}}};
                                 timestep::Int64 = -1,
                                 fig_title::String = "Title ??",
-                                dpi::Int64 = 1200)
+                                dpi::Int64 = 1200,
+                                dynamic_obstacles = false)
     total_time = sar_history[end][1].t
     if timestep == -1
         timestep = total_time
@@ -501,12 +504,25 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
     end
 
     ## Plot obstacles
-    labeled = false
-    for x in 1:xmax
-        for y in 1:ymax
-            if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
-                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles", dpi=dpi)
-                labeled = true
+    labeled_obstacles = false
+    if dynamic_obstacles
+        # Plot all obstacles
+        for x in 1:xmax
+            for y in 1:ymax
+                if mdp.obstacles_grid[x,y,timestep] != 0.0
+                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles", dpi=dpi)
+                    labeled_obstacles = true
+                end
+            end
+        end
+    else
+        # Plot only static obstacles
+        for x in 1:xmax
+            for y in 1:ymax
+                if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
+                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles", dpi=dpi)
+                    labeled_obstacles = true
+                end
             end
         end
     end
@@ -526,12 +542,13 @@ function animate_bilevel_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
                                                 dir="", 
                                                 fname = "bilevel_mdp_episode_gif", 
                                                 fig_title="Bi-level MDP Episode",
-                                                dpi::Int64 = 1200)
-	sim_frames = Frames(MIME("image/png"), fps=2)
+                                                dpi::Int64 = 1200,
+                                                fps::Int64 = 1)
+	sim_frames = Frames(MIME("image/png"), fps=fps)
     frame_i = nothing
     total_time = sar_history[end][1].t
 	for i in 1:total_time
-		frame_i = plot_frame_bilevel(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi)
+		frame_i = plot_frame_bilevel(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi, dynamic_obstacles=true)
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
@@ -621,7 +638,8 @@ function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP,
                                 sar_history::Vector{Tuple{MRoverWorld.MState, MRoverWorld.MAction, Float64}};
                                 timestep::Int64 = -1,
                                 fig_title::String = "Title ??",
-                                dpi::Int64 = 1200)
+                                dpi::Int64 = 1200,
+                                dynamic_obstacles = false)
     if timestep == -1
         timestep = length(sar_history)
     end
@@ -662,14 +680,27 @@ function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP,
             end
         end
     end
-    
+
     ## Plot obstacles
-    labeled = false
-    for x in 1:xmax
-        for y in 1:ymax
-            if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
-                scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled ? "" : "Obstacles", dpi=dpi)
-                labeled = true
+    labeled_obstacles = false
+    if dynamic_obstacles
+        # Plot all obstacles
+        for x in 1:xmax
+            for y in 1:ymax
+                if mdp.obstacles_grid[x,y,timestep] != 0.0
+                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles", dpi=dpi)
+                    labeled_obstacles = true
+                end
+            end
+        end
+    else
+        # Plot only static obstacles
+        for x in 1:xmax
+            for y in 1:ymax
+                if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
+                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles", dpi=dpi)
+                    labeled_obstacles = true
+                end
             end
         end
     end
@@ -689,12 +720,13 @@ function animate_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
                                                 dir="", 
                                                 fname = "flat_mdp_episode_gif", 
                                                 fig_title="Flat MDP Episode",
-                                                dpi::Int64 = 1200)
-	sim_frames = Frames(MIME("image/png"), fps=2)
+                                                dpi::Int64 = 1200,
+                                                fps::Int64 = 1)
+	sim_frames = Frames(MIME("image/png"), fps=fps)
     frame_i = nothing
     num_steps = length(sar_history)
 	for i in 1:num_steps
-		frame_i = plot_frame_finegrained(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi)
+		frame_i = plot_frame_finegrained(mdp, sar_history, timestep=i, fig_title=fig_title, dpi=dpi, dynamic_obstacles=true)
 		push!(sim_frames, frame_i)
 	end
     [push!(sim_frames, frame_i) for _ in 1:4] # duplicate last frame
@@ -713,8 +745,8 @@ end
 defpath = PlotElement("black", :circle, 5, 0.5, "Path")
 obs = PlotElement("red", :square, 10, 0.5, "Obstacles")
 llp = PlotElement("red", :circle, 3, 0.5, "Low-level path")
-hlp = PlotElement("blue", :star5, 10, 0.5, "High-level path")
-targets = PlotElement(hlp.color, hlp.markershape, hlp.markersize, hlp.markeralpha, "Targets")
+hlp = PlotElement("blue", :circle, 10, 0.5, "High-level path")
+targets = PlotElement("blue", :circle, 10, 0.5, "Targets")
 meas = PlotElement("green", :dtriangle, 10, 0.5, "Measurements")
 
 start = PlotElement("black", :x, 8, 1.0, "Start point")
