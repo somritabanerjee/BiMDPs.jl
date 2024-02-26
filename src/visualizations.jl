@@ -269,9 +269,7 @@ function plot_simulation_results(results; dir="results", fname="simulation_resul
     return fig
 end
 
-function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_compute")
-    fig = plot()
-    ordering = "bl_vi", "vi", "qlearning", "sarsa"
+function helper_plot_optimality_vs_compute!(fig, ordering, results; use_title = true)
     for (i, solver_name) in enumerate(ordering)
         !(solver_name in keys(results)) && continue
         (comp_times, mean_rewards, stddev_rewards) = results[solver_name]
@@ -282,20 +280,40 @@ function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_comput
     end
     xlabel!("Computation time (s)")
     ylabel!("Mean discounted reward")
-    title!("Optimality vs. Compute Time")
-    # xlims!((0,200))
-    !isdir(dir) && mkdir(dir) # create directory
-    savefig(fig, dir*"/"*fname)
-    savefig(fig, dir*"/"*fname*".pdf")
-    return fig
+    use_title && title!("Optimality vs. Compute Time")
+    xlims!((0,200))
+    ylims!((0,45))
 end
 
-function plot_optimality_compute_vs_gridsize(results; dir="varygrid", fname="vary_gridsize")
-    fig = plot()
-    ordering = "bl_vi", "vi"
-    num_grid_sizes = length(results[ordering[1]][1])
+
+function plot_optimality_vs_compute(results; dir="", fname="optimality_vs_compute",dpi=1200, with_ablations=false, use_title=true)
+    if !with_ablations
+        ordering = "bl_vi", "vi", "qlearning", "sarsa"
+        fig = plot(dpi=dpi)
+        helper_plot_optimality_vs_compute!(fig, ordering, results, use_title=use_title)
+        !isdir(dir) && mkdir(dir) # create directory
+        savefig(fig, dir*"/"*fname)
+        savefig(fig, dir*"/"*fname*".pdf")
+        return fig
+    else
+        orderings = [("dummy","vi"),("bl_vi", "vi"),("bl_vi", "vi", "qlearning", "sarsa")]
+        for (i,ord) in enumerate(orderings)
+            fig = plot(dpi=dpi)
+            helper_plot_optimality_vs_compute!(fig, ord, results, use_title=use_title)
+            plot!(legend=:bottomright)
+            !isdir(dir) && mkdir(dir) # create directory
+            savefig(fig, dir*"/"*fname*"_ablation_$i")
+        end
+    end
+end
+
+function helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results; use_title=true, show_compute=true, show_rewards=true)
+    # num_grid_sizes = length(results[ordering[1]][1])
+    num_grid_sizes = 5 # hard-coding to allow for ablations
     grid_sizes = ["10x10\n5 tgts", "20x20\n10tgts", "30x30\n15tgts", "40x40\n15tgts", "50x50\n15tgts"]
-    p = twinx()
+    if (show_compute && show_rewards) 
+        p = twinx()
+    end
     max_reward = 0
     max_time = 0
     for (i, solver_name) in enumerate(ordering)
@@ -304,20 +322,56 @@ function plot_optimality_compute_vs_gridsize(results; dir="varygrid", fname="var
         errors = log.(stddev_rewards ./ 3)
         errors = [e>0 ? e : 0.0 for e in errors]
         lbl = (solver_name == "bl_vi") ? "bl_vi (ours)" : solver_name
-        plot!(1:length(mean_rewards), mean_rewards, ribbon=errors, fillalpha = 0.2, label=lbl, color = i, legend = :left, ylabel = "Mean discounted reward", grid = :off)
-        plot!(p, 1:length(mean_rewards), comp_times, linestyle=:dash, label=lbl, color = i, legend = :right, ylabel = "Computation time (s)", box=:on)
+        show_compute && plot!(1:length(mean_rewards), comp_times, label=lbl, color = i, legend = :left, ylabel = "Computation time (s)", box=:on)
+        show_rewards && plot!(p, 1:length(mean_rewards), mean_rewards, linestyle=:dash, ribbon=errors, fillalpha = 0.2, label=lbl, color = i, legend = :right, ylabel = "Mean discounted reward", grid = :off)        
         max_reward = (maximum(mean_rewards) > max_reward) ? maximum(mean_rewards) : max_reward
         max_time = (maximum(comp_times) > max_time) ? maximum(comp_times) : max_time
     end
     xlabel!("Problem complexity")
     xticks!((1:num_grid_sizes), grid_sizes[1:num_grid_sizes])
-    ylims!((0, max_reward))
-    ylims!(p, (0, max_time))
-    title!("Rewards and Computation Time vs. Problem Complexity")
-    !isdir(dir) && mkdir(dir) # create directory
-    savefig(fig, dir*"/"*fname)
-    savefig(fig, dir*"/"*fname*".pdf")
-    return fig
+    show_compute && ylims!((0, max_time))
+    show_rewards && ylims!(p, (0, max_reward))
+    use_title && title!("Rewards and Computation Time vs. Problem Complexity")
+end
+
+function plot_optimality_compute_vs_gridsize(results; dir="varygrid", fname="vary_gridsize",dpi=1200, use_title=true, with_ablations=false)
+    if !with_ablations
+        fig = plot(dpi=dpi)
+        ordering = "bl_vi", "vi"
+        helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results, use_title=use_title)
+        !isdir(dir) && mkdir(dir) # create directory
+        savefig(fig, dir*"/"*fname)
+        savefig(fig, dir*"/"*fname*".pdf")
+        return fig
+    else
+        
+        i = 1 # only vi and only compute
+        ordering = "dummy", "vi"
+        show_compute = true
+        show_rewards = false
+        fig = plot(dpi=dpi)
+        helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results, use_title=use_title, show_compute=show_compute, show_rewards=show_rewards)
+        !isdir(dir) && mkdir(dir) # create directory
+        savefig(fig, dir*"/"*fname*"_ablation_$i")
+
+        i = 2 # vi and blvi and only compute
+        ordering = "bl_vi", "vi"
+        show_compute = true
+        show_rewards = false
+        fig = plot(dpi=dpi)
+        helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results, use_title=use_title, show_compute=show_compute, show_rewards=show_rewards)
+        !isdir(dir) && mkdir(dir) # create directory
+        savefig(fig, dir*"/"*fname*"_ablation_$i")
+       
+        i = 3  # vi and blvi and both rewards and compute
+        ordering = "bl_vi", "vi"
+        show_compute = true
+        show_rewards = true
+        fig = plot(dpi=dpi)
+        helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results, use_title=use_title, show_compute=show_compute, show_rewards=show_rewards)
+        !isdir(dir) && mkdir(dir) # create directory
+        savefig(fig, dir*"/"*fname*"_ablation_$i")
+    end
 end
 
 
