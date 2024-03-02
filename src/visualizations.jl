@@ -479,8 +479,10 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
                                 dpi::Int64 = 1200,
                                 dynamic_obstacles = false)
     total_time = sar_history[end][1].t
+    show_current_position = true
     if timestep == -1
         timestep = total_time
+        show_current_position = false
     end
     # Limit sar_history to timestep
     sar_history_trim = [(s, a, r) for (s, a, r) in sar_history if s.t <= timestep]
@@ -501,7 +503,7 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
             if s isa HLRoverWorld.HLState && tstep > 1
                 hl_num += 1
                 push!(hl_locs, tstep)
-                color_seq = hl_num
+                color_seq = colorschemes[:tab10][hl_num]
                 scatter!([(s.x, s.y)], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $hl_num", dpi=dpi)
                 prev = hl_num == 1 ? 0 : hl_locs[hl_num-1]
                 LL_history = [(j, (s, a, r)) for (j, (s, a, r)) in enumerate(sar_history) if (prev<j<tstep && s isa MLLRoverWorld.MLLState)]
@@ -527,13 +529,15 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
                 if num_hl<=2 # to prevent counting end as an hl tgt
                     # plot hl tgt with scatter
                     tgt_location = mdp.tgts[a.tgt][1]
-                    scatter!([(tgt_location[1], tgt_location[2])], color=num_hl, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $num_hl", dpi=dpi)
+                    color_seq = colorschemes[:tab10][num_hl]
+                    scatter!([(tgt_location[1], tgt_location[2])], color=color_seq, markersize=targets.markersize, markeralpha=targets.markeralpha, label="High-level tgt $num_hl", dpi=dpi)
                 end
                 if num_hl > 1
                     # plot path from previous hl tgt to this hl tgt
                     LL_subset = sar_history_trim[ind_complete+1:ind]
+                    color_seq = colorschemes[:tab10][num_hl-1]
                     plot!([s.x for (s,a,r) in LL_subset], [s.y for (s,a,r) in LL_subset], 
-                    color = num_hl-1,
+                    color = color_seq,
                     marker = (llp.markershape, llp.markersize, llp.markeralpha),
                     label="", dpi=dpi)
                 end
@@ -543,7 +547,7 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
         # plot path from last hl tgt to end
         LL_subset = sar_history_trim[ind_complete+1:end]
         plot!([s.x for (s,a,r) in LL_subset], [s.y for (s,a,r) in LL_subset],
-            color = (num_hl<=2) ? num_hl : defpath.color,
+            color = (num_hl<=2) ? colorschemes[:tab10][num_hl] : defpath.color,
             marker = (llp.markershape, llp.markersize, llp.markeralpha),
             label="", dpi=dpi)
     end
@@ -579,6 +583,12 @@ function plot_frame_bilevel(mdp::MRoverWorld.MRoverWorldMDP,
                 end
             end
         end
+    end
+
+    # Plot marker for current rover position
+    if show_current_position
+        (s, a, r) = sar_history_trim[end]
+        scatter!([(s.x, s.y)], color=current.color, markershape=current.markershape, markersize=current.markersize, markeralpha=current.markeralpha, label="")
     end
 
     ## Plot finish point
@@ -694,21 +704,23 @@ function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP,
                                 fig_title::String = "Title ??",
                                 dpi::Int64 = 1200,
                                 dynamic_obstacles = false)
+    show_current_position = true
     if timestep == -1
         timestep = length(sar_history)
+        show_current_position = false
     end
     gr()
     (xmax, ymax) = mdp.grid_size
     fig = plot([], framestyle=:box, aspect_ratio=:equal, xlims=(0.5, xmax+0.5), ylims=(0.5, ymax+0.5), xticks=1:xmax, yticks=1:ymax, grid=false, minorgrid=true, minorticks = 2, minorgridalpha = 0.1, label="", legend=true, dpi=dpi)
     ## Plot start point
     start_point = sar_history[1][1]
-    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label, dpi=dpi)
+    scatter!([(start_point.x, start_point.y)], color=start.color, markershape=start.markershape, markersize=start.markersize, markeralpha=start.markeralpha, label=start.label)
     
     ## Plot path
     plot!([s.x for (i, (s, a, r)) in enumerate(sar_history[1:timestep])], [s.y for (i, (s, a, r)) in enumerate(sar_history[1:timestep])], 
             color = defpath.color, 
             marker=(defpath.markershape, defpath.markersize, defpath.markeralpha, defpath.color), 
-            label="Path", dpi=dpi)
+            label="Path")
 
     ## Plot target rewards + measurement rewards
     labeled_tgts = false
@@ -718,14 +730,14 @@ function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP,
         if r > 0
             found = false
             if a == MRoverWorld.MEASURE
-                scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements", dpi=dpi)
+                scatter!([(s.x, s.y)], color=meas.color, markershape=meas.markershape, markersize=meas.markersize, markeralpha=meas.markeralpha, label= labeled_measurements ? "" : "Measurements")
                 found = true
                 labeled_measurements = true
             end
             if !found
                 for (tgt_id, ((x, y), (t0,tf), val)) in mdp.tgts
                     if (s.x, s.y) == (x, y) && t0 <= s.t <= tf
-                        scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled_tgts ? "" : "Rewards", dpi=dpi)
+                        scatter!([(s.x, s.y)], color=targets.color, markershape=targets.markershape, markersize=targets.markersize, markeralpha=targets.markeralpha, label = labeled_tgts ? "" : "Rewards")
                         labeled_tgts = true
                         found = true
                         break
@@ -742,7 +754,7 @@ function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP,
         for x in 1:xmax
             for y in 1:ymax
                 if mdp.obstacles_grid[x,y,timestep] != 0.0
-                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles", dpi=dpi)
+                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles")
                     labeled_obstacles = true
                 end
             end
@@ -752,19 +764,25 @@ function plot_frame_finegrained(mdp::MRoverWorld.MRoverWorldMDP,
         for x in 1:xmax
             for y in 1:ymax
                 if all(val!= 0.0 for val in mdp.obstacles_grid[x,y,:])
-                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles", dpi=dpi)
+                    scatter!([x], [y], color=obs.color, markershape=obs.markershape, markersize=obs.markersize, markeralpha=obs.markeralpha, label= labeled_obstacles ? "" : "Obstacles")
                     labeled_obstacles = true
                 end
             end
         end
     end
 
+    # Plot marker for current rover position
+    if show_current_position
+        (s, a, r) = sar_history[timestep]
+        scatter!([(s.x, s.y)], color=current.color, markershape=current.markershape, markersize=current.markersize, markeralpha=current.markeralpha, label="")
+    end
+
     ## Plot finish point
     if timestep == length(sar_history)
         finish_point = last(sar_history)[1]
-        scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label, dpi=dpi)
+        scatter!([(finish_point.x, finish_point.y)], color=finish.color, markershape=finish.markershape, markersize=finish.markersize, markeralpha=finish.markeralpha, label=finish.label)
     end
-    plot!(legend=:topleft, dpi=dpi)
+    plot!(legend=:topleft)
     title!(fig_title)
     return fig
 end
@@ -789,19 +807,20 @@ function animate_finegrained_simulated_episode(mdp::MRoverWorld.MRoverWorldMDP,
 end
 
 struct PlotElement
-    color::String
+    color::RGB{Float64}
     markershape::Symbol
     markersize::Int64
     markeralpha::Float64
     label::String
 end
 
-defpath = PlotElement("black", :circle, 5, 0.5, "Path")
-obs = PlotElement("red", :square, 10, 0.5, "Obstacles")
-llp = PlotElement("red", :circle, 3, 0.5, "Low-level path")
-hlp = PlotElement("blue", :circle, 10, 0.5, "High-level path")
-targets = PlotElement("blue", :circle, 10, 0.5, "Targets")
-meas = PlotElement("green", :dtriangle, 10, 0.5, "Measurements")
+defpath = PlotElement(RGB(0,0,0), :circle, 5, 0.5, "Path") # black
+obs = PlotElement(colorschemes[:tab10][4], :square, 10, 0.5, "Obstacles") # red
+llp = PlotElement(colorschemes[:tab10][4], :circle, 3, 0.5, "Low-level path") # red
+hlp = PlotElement(colorschemes[:tab10][1], :circle, 10, 0.5, "High-level path") # blue
+targets = PlotElement(colorschemes[:tab10][1], :circle, 10, 0.5, "Targets") # blue
+meas = PlotElement(colorschemes[:tab10][3], :dtriangle, 10, 0.5, "Measurements")
 
-start = PlotElement("black", :x, 8, 1.0, "Start point")
-finish = PlotElement("black", :diamond, 8, 1.0, "End point")
+start = PlotElement(RGB(0,0,0), :x, 8, 1.0, "Start point")
+finish = PlotElement(RGB(0,0,0), :diamond, 8, 1.0, "End point")
+current = PlotElement(RGB(0,0,0), :circle, 10, 0.5, "Current position")
