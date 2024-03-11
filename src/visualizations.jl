@@ -273,6 +273,11 @@ function helper_plot_optimality_vs_compute!(fig, ordering, results; use_title = 
     for (i, solver_name) in enumerate(ordering)
         !(solver_name in keys(results)) && continue
         (comp_times, mean_rewards, stddev_rewards) = results[solver_name]
+        if (solver_name == "vi" || solver_name == "bl_vi")
+            comp_times = comp_times[1:end-3]
+            mean_rewards = mean_rewards[1:end-3]
+            stddev_rewards = stddev_rewards[1:end-3]
+        end
         errors = log.(stddev_rewards ./ 3)
         errors = [e>0 ? e : 0.0 for e in errors]
         lbl = (solver_name == "bl_vi") ? "bl_vi (ours)" : solver_name
