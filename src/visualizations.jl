@@ -311,9 +311,10 @@ function helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results; use
     # num_grid_sizes = length(results[ordering[1]][1])
     num_grid_sizes = 5 # hard-coding to allow for ablations
     grid_sizes = ["10x10\n5 tgts", "20x20\n10tgts", "30x30\n15tgts", "40x40\n15tgts", "50x50\n15tgts"]
-    if (show_compute && show_rewards)
-        p = twinx()
-    end
+    # if (show_compute && show_rewards)
+    #     p = twinx()
+    # end
+    p = twinx()
     max_reward = 0
     max_time = 0
     # Plot best fit line
@@ -347,6 +348,7 @@ function helper_plot_optimality_compute_vs_gridsize!(fig, ordering, results; use
     show_compute && ylims!((0, max_time))
     show_rewards && !show_relative_reward && ylims!(p, (0, max_reward))
     show_rewards && show_relative_reward && ylims!(p, (0, 110))
+    !show_rewards && plot!(p, ylabel=" ", axis=false)
     use_title && title!("Rewards and Computation Time vs. Problem Complexity")
 end
 
